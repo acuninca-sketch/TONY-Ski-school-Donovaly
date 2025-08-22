@@ -59,12 +59,13 @@
     }
 
     .btn {
-      padding: 8px 15px;
+      padding: 6px 12px;
       border: none;
       background: #007bff;
       color: white;
       border-radius: 5px;
       cursor: pointer;
+      font-size: 0.85rem;
     }
 
     .btn:disabled {
@@ -73,19 +74,34 @@
     }
 
     form {
-      width: 100%;
-      max-width: 500px;
-      display: flex;
+      display: none; /* formulár je skrytý, zobrazíme po kliknutí */
       flex-direction: column;
       gap: 10px;
+      max-width: 400px;
       margin-bottom: 30px;
+      background: #ffffff;
+      padding: 15px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
     }
 
-    input, select {
+    input {
       padding: 10px;
-      border: 1px solid #ccc;
       border-radius: 5px;
+      border: 1px solid #ccc;
       font-size: 1rem;
+    }
+
+    #submitBtn {
+      background: #28a745;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+
+    #submitBtn:disabled {
+      background: #aaa;
+      cursor: not-allowed;
     }
 
     footer {
@@ -103,15 +119,92 @@
   </header>
 
   <h2>Dostupné hodiny</h2>
-  <table>
+  <table id="schedule">
     <thead>
       <tr>
         <th>Čas</th>
         <th>Stav</th>
+        <th>Akcia</th>
       </tr>
     </thead>
-    <tbody>
-      <tr><td>09:00</td><td class="available">Voľné</td></tr>
-      <tr><td>10:00</td><td class="available">Voľné</td></tr>
-      <tr><td>11:00</td><td class="booked">Obsadené</td></tr>
-      <tr><
+    <tbody></tbody>
+  </table>
+
+  <!-- Formulár -->
+  <form id="reservationForm">
+    <h3>Rezervácia hodiny: <span id="selectedTime"></span></h3>
+    <input type="text" id="name" placeholder="Meno" required>
+    <input type="tel" id="phone" placeholder="Telefón" required>
+    <button type="submit" id="submitBtn">Potvrdiť rezerváciu</button>
+  </form>
+
+  <footer>
+    <p>© 2025 Lyžiarska škola – testovacia verzia</p>
+  </footer>
+
+  <script>
+    const times = [
+      "09:00","10:00","11:00","12:00","13:00",
+      "13:30","14:30","15:30","16:30","17:30","18:30","19:30"
+    ];
+
+    const tbody = document.querySelector("#schedule tbody");
+    const form = document.getElementById("reservationForm");
+    const selectedTimeSpan = document.getElementById("selectedTime");
+    let currentRow = null;
+
+    times.forEach(time => {
+      const row = document.createElement("tr");
+
+      const timeCell = document.createElement("td");
+      timeCell.textContent = time;
+      row.appendChild(timeCell);
+
+      const statusCell = document.createElement("td");
+      statusCell.textContent = "Voľné";
+      statusCell.classList.add("available");
+      row.appendChild(statusCell);
+
+      const actionCell = document.createElement("td");
+      const btn = document.createElement("button");
+      btn.textContent = "Rezervovať";
+      btn.classList.add("btn");
+      btn.onclick = () => {
+        selectedTimeSpan.textContent = time;
+        currentRow = row;
+        form.style.display = "flex";
+      };
+      actionCell.appendChild(btn);
+      row.appendChild(actionCell);
+
+      tbody.appendChild(row);
+    });
+
+    form.onsubmit = (e) => {
+      e.preventDefault();
+      if (!currentRow) return;
+
+      const statusCell = currentRow.children[1];
+      const btn = currentRow.children[2].firstChild;
+
+      // označíme ako obsadené
+      statusCell.textContent = "Obsadené";
+      statusCell.classList.remove("available");
+      statusCell.classList.add("booked");
+      btn.disabled = true;
+
+      // získame údaje z formulára
+      const name = document.getElementById("name").value;
+      const phone = document.getElementById("phone").value;
+      console.log(`Rezervácia: ${currentRow.children[0].textContent}, Meno: ${name}, Tel: ${phone}`);
+
+      // vyčistíme formulár a skryjeme
+      form.reset();
+      form.style.display = "none";
+      currentRow = null;
+
+      alert("Rezervácia úspešná!");
+    };
+  </script>
+</body>
+</html>
