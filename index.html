@@ -3,49 +3,115 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lyžiarska škola</title>
-  <link rel="stylesheet" href="style.css">
+  <title>Lyžiarska škola - Rezervácie</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f0f8ff;
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 10px;
+    }
+
+    header {
+      text-align: center;
+      margin: 20px 0;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      margin-bottom: 10px;
+    }
+
+    table {
+      width: 100%;
+      max-width: 500px;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: center;
+      font-size: 0.9rem;
+    }
+
+    th {
+      background: #004080;
+      color: white;
+    }
+
+    tr:nth-child(even) {
+      background: #f9f9f9;
+    }
+
+    .available {
+      background: #d4edda;
+    }
+
+    .booked {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    .btn {
+      padding: 8px 15px;
+      border: none;
+      background: #007bff;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+
+    .btn:disabled {
+      background: #aaa;
+      cursor: not-allowed;
+    }
+
+    form {
+      width: 100%;
+      max-width: 500px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 30px;
+    }
+
+    input, select {
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+
+    footer {
+      text-align: center;
+      font-size: 0.8rem;
+      color: #666;
+      margin-top: auto;
+    }
+  </style>
 </head>
 <body>
-  <!-- Hero sekcia -->
-  <header class="hero">
-    <h1>Lyžiarska škola ⛷️</h1>
-    <p>Naučíme vás zamilovať si zimu!</p>
-    <a href="#kurzy" class="btn">Rezervovať kurz</a>
+  <header>
+    <h1>⛷️ Lyžiarska škola</h1>
+    <p>Rezervujte si svoju hodinu jednoducho a rýchlo</p>
   </header>
 
-  <!-- Sekcia kurzov -->
-  <section id="kurzy" class="section">
-    <h2>Naše kurzy</h2>
-    <div class="courses">
-      <div class="card">
-        <h3>Začiatočníci</h3>
-        <p>Prvé kroky na lyžiach v bezpečí s inštruktorom.</p>
-      </div>
-      <div class="card">
-        <h3>Pokročilí</h3>
-        <p>Zlepšite techniku a naučte sa carvingové oblúky.</p>
-      </div>
-      <div class="card">
-        <h3>Deti</h3>
-        <p>Hravo a bezpečne – kurzy pre deti už od 5 rokov.</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- Kontakt -->
-  <section id="kontakt" class="section">
-    <h2>Kontakt</h2>
-    <p>📍 Lyžiarsky areál Jasná<br>
-       📞 +421 900 123 456<br>
-       ✉️ info@lyziarskaskola.sk</p>
-  </section>
-
-  <footer>
-    <p>© 2025 Lyžiarska škola – Všetky práva vyhradené</p>
-  </footer>
-
-  <!-- Efekt snehu -->
-  <div class="snow"></div>
-</body>
-</html>
+  <h2>Dostupné hodiny</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Čas</th>
+        <th>Stav</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>09:00</td><td class="available">Voľné</td></tr>
+      <tr><td>10:00</td><td class="available">Voľné</td></tr>
+      <tr><td>11:00</td><td class="booked">Obsadené</td></tr>
+      <tr><
