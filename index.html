@@ -66,7 +66,7 @@
       border-radius: 5px;
       cursor: pointer;
       font-size: 0.9rem;
-      margin: 10px 0;
+      margin: 10px 5px;
     }
 
     .btn:disabled {
@@ -74,8 +74,15 @@
       cursor: not-allowed;
     }
 
-    .date-picker {
-      margin: 10px 0 20px 0;
+    #reservationsList {
+      margin-top: 20px;
+      max-width: 500px;
+      width: 100%;
+      background: white;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      padding: 10px;
+      display: none;
     }
   </style>
 </head>
@@ -84,9 +91,6 @@
     <h1>⛷️ Lyžiarska škola</h1>
     <p>Rezervujte si viac hodín naraz</p>
   </header>
-
-  <h2>Vyberte dátum</h2>
-  <input type="date" id="datePicker" class="date-picker">
 
   <h2>Dostupné hodiny</h2>
   <form id="bookingForm">
@@ -105,7 +109,13 @@
     <label>Telefón: <input type="tel" id="phone" required></label><br><br>
 
     <button type="submit" class="btn">Rezervovať vybrané</button>
+    <button type="button" class="btn" onclick="showReservations()">Zobraziť rezervácie</button>
   </form>
+
+  <div id="reservationsList">
+    <h3>📋 Zoznam rezervácií</h3>
+    <ul id="reservationsUl"></ul>
+  </div>
 
   <footer>
     <p>© 2025 Lyžiarska škola – testovacia verzia</p>
@@ -118,69 +128,45 @@
     ];
 
     const tbody = document.querySelector("#schedule tbody");
-    const datePicker = document.getElementById("datePicker");
 
-    // uloženie rezervácií podľa dátumu
-    let reservations = {};
+    // Načítaj rezervácie z LocalStorage
+    let reservations = JSON.parse(localStorage.getItem("reservations")) || [];
 
-    function renderSchedule(date) {
-      tbody.innerHTML = "";
-      if (!date) return;
+    // Vykresli tabuľku hodín
+    times.forEach(time => {
+      const row = document.createElement("tr");
 
-      // ak ešte pre daný deň nemáme rezervácie → vytvoríme záznam
-      if (!reservations[date]) {
-        reservations[date] = {};
-        times.forEach(time => reservations[date][time] = "Voľné");
+      const timeCell = document.createElement("td");
+      timeCell.textContent = time;
+      row.appendChild(timeCell);
+
+      const statusCell = document.createElement("td");
+      const isBooked = reservations.some(r => r.time === time);
+      if (isBooked) {
+        statusCell.textContent = "Obsadené";
+        statusCell.classList.add("booked");
+      } else {
+        statusCell.textContent = "Voľné";
+        statusCell.classList.add("available");
       }
+      row.appendChild(statusCell);
 
-      times.forEach(time => {
-        const row = document.createElement("tr");
+      const selectCell = document.createElement("td");
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.disabled = isBooked;
+      selectCell.appendChild(checkbox);
+      row.appendChild(selectCell);
 
-        // čas
-        const timeCell = document.createElement("td");
-        timeCell.textContent = time;
-        row.appendChild(timeCell);
+      tbody.appendChild(row);
+    });
 
-        // stav
-        const statusCell = document.createElement("td");
-        statusCell.textContent = reservations[date][time];
-        if (reservations[date][time] === "Voľné") {
-          statusCell.classList.add("available");
-        } else {
-          statusCell.classList.add("booked");
-        }
-        row.appendChild(statusCell);
-
-        // checkbox
-        const selectCell = document.createElement("td");
-        const checkbox = document.createElement("input");
-        checkbox.type = "checkbox";
-        if (reservations[date][time] !== "Voľné") {
-          checkbox.disabled = true;
-        }
-        selectCell.appendChild(checkbox);
-        row.appendChild(selectCell);
-
-        tbody.appendChild(row);
-      });
-    }
-
-    // keď zmeníme dátum
-    datePicker.onchange = () => {
-      renderSchedule(datePicker.value);
-    };
-
-    // odoslanie formulára
+    // Rezervácia hodín
     document.getElementById("bookingForm").onsubmit = function(e) {
       e.preventDefault();
-      const date = datePicker.value;
       const name = document.getElementById("name").value;
       const phone = document.getElementById("phone").value;
 
-      if (!date) {
-        alert("Prosím, vyberte dátum.");
-        return;
-      }
       if (!name || !phone) {
         alert("Prosím, vyplňte meno a telefón.");
         return;
@@ -188,22 +174,47 @@
 
       const rows = tbody.querySelectorAll("tr");
       rows.forEach(row => {
-        const time = row.children[0].textContent;
         const statusCell = row.children[1];
         const checkbox = row.children[2].querySelector("input");
 
-        if (checkbox.checked && reservations[date][time] === "Voľné") {
-          reservations[date][time] = "Obsadené";
+        if (checkbox.checked && statusCell.textContent === "Voľné") {
           statusCell.textContent = "Obsadené";
           statusCell.classList.remove("available");
           statusCell.classList.add("booked");
           checkbox.disabled = true;
+
+          // uloženie do LocalStorage
+          reservations.push({
+            name,
+            phone,
+            time: row.children[0].textContent,
+            date: new Date().toLocaleDateString()
+          });
         }
       });
 
-      alert("Rezervácia potvrdená pre " + name + " (" + phone + ") na " + date);
+      localStorage.setItem("reservations", JSON.stringify(reservations));
+      alert("Rezervácia potvrdená pre " + name + " (" + phone + ")");
       document.getElementById("bookingForm").reset();
-      renderSchedule(date);
+    }
+
+    // Zobrazenie rezervácií
+    function showReservations() {
+      const listDiv = document.getElementById("reservationsList");
+      const listUl = document.getElementById("reservationsUl");
+      listUl.innerHTML = "";
+
+      if (reservations.length === 0) {
+        listUl.innerHTML = "<li>Žiadne rezervácie</li>";
+      } else {
+        reservations.forEach(r => {
+          const li = document.createElement("li");
+          li.textContent = `${r.date} - ${r.time} (${r.name}, ${r.phone})`;
+          listUl.appendChild(li);
+        });
+      }
+
+      listDiv.style.display = "block";
     }
   </script>
 </body>
