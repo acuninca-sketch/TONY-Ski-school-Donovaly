@@ -1,147 +1,212 @@
 <!DOCTYPE html>
 <html lang="sk">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Lyžiarska škola - Rezervácie</title>
-<style>
-  body {
-    margin:0;
-    font-family: Arial, sans-serif;
-    background: #f0f8ff;
-    color: #333;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding:10px;
-  }
-  header {text-align:center;margin:20px 0;}
-  h1 {font-size:1.8rem;margin-bottom:10px;}
-  select, table {width:100%; max-width:500px; margin-bottom:20px;}
-  table {border-collapse: collapse;}
-  th, td {border:1px solid #ccc;padding:10px;text-align:center;font-size:0.9rem;}
-  th {background:#004080;color:white;}
-  tr:nth-child(even) {background:#f9f9f9;}
-  .available {background:#d4edda;}
-  .booked {background:#f8d7da;color:#721c24;}
-  .btn {padding:6px 12px;border:none;background:#007bff;color:white;border-radius:5px;cursor:pointer;font-size:0.85rem;}
-  .btn:disabled {background:#aaa;cursor:not-allowed;}
-  form {
-    display:none;
-    flex-direction:column;
-    gap:10px;
-    max-width:400px;
-    margin-bottom:30px;
-    background:#fff;padding:15px;
-    border-radius:10px;
-    box-shadow:0 4px 10px rgba(0,0,0,0.1);
-  }
-  input {padding:10px;border-radius:5px;border:1px solid #ccc;font-size:1rem;}
-  #submitBtn {background:#28a745;color:white;border:none;cursor:pointer;}
-  #submitBtn:disabled {background:#aaa;cursor:not-allowed;}
-  footer {text-align:center;font-size:0.8rem;color:#666;margin-top:auto;}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lyžiarska škola - Rezervácie</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f0f8ff;
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 10px;
+    }
+
+    header {
+      text-align: center;
+      margin: 20px 0;
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      margin-bottom: 10px;
+    }
+
+    table {
+      width: 100%;
+      max-width: 500px;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 10px;
+      text-align: center;
+      font-size: 0.9rem;
+    }
+
+    th {
+      background: #004080;
+      color: white;
+    }
+
+    tr:nth-child(even) {
+      background: #f9f9f9;
+    }
+
+    .available {
+      background: #d4edda;
+    }
+
+    .booked {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    .btn {
+      padding: 8px 15px;
+      border: none;
+      background: #007bff;
+      color: white;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      margin: 10px 0;
+    }
+
+    .btn:disabled {
+      background: #aaa;
+      cursor: not-allowed;
+    }
+
+    .date-picker {
+      margin: 10px 0 20px 0;
+    }
+  </style>
 </head>
 <body>
-<header>
-  <h1>⛷️ Lyžiarska škola</h1>
-  <p>Rezervujte si hodinu jednoducho</p>
-</header>
+  <header>
+    <h1>⛷️ Lyžiarska škola</h1>
+    <p>Rezervujte si viac hodín naraz</p>
+  </header>
 
-<label for="dateSelect">Vyber deň:</label>
-<select id="dateSelect"></select>
+  <h2>Vyberte dátum</h2>
+  <input type="date" id="datePicker" class="date-picker">
 
-<h2>Dostupné hodiny</h2>
-<table id="schedule">
-  <thead>
-    <tr>
-      <th>Čas</th>
-      <th>Stav</th>
-      <th>Akcia</th>
-    </tr>
-  </thead>
-  <tbody></tbody>
-</table>
+  <h2>Dostupné hodiny</h2>
+  <form id="bookingForm">
+    <table id="schedule">
+      <thead>
+        <tr>
+          <th>Čas</th>
+          <th>Stav</th>
+          <th>Vybrať</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
 
-<form id="reservationForm">
-  <h3>Rezervácia hodiny: <span id="selectedTime"></span> (<span id="selectedDate"></span>)</h3>
-  <input type="text" id="name" placeholder="Meno" required>
-  <input type="tel" id="phone" placeholder="Telefón" required>
-  <button type="submit" id="submitBtn">Potvrdiť rezerváciu</button>
-</form>
+    <label>Meno: <input type="text" id="name" required></label><br><br>
+    <label>Telefón: <input type="tel" id="phone" required></label><br><br>
 
-<footer>
-  <p>© 2025 Lyžiarska škola – testovacia verzia</p>
-</footer>
+    <button type="submit" class="btn">Rezervovať vybrané</button>
+  </form>
 
-<script>
-const times = ["09:00 - 9:55","10:00","11:00","12:00","13:00",
-               "13:30","14:30","15:30","16:30","17:30","18:30","19:30"];
+  <footer>
+    <p>© 2025 Lyžiarska škola – testovacia verzia</p>
+  </footer>
 
-const dateSelect = document.getElementById("dateSelect");
-const tbody = document.querySelector("#schedule tbody");
-const form = document.getElementById("reservationForm");
-const selectedTimeSpan = document.getElementById("selectedTime");
-const selectedDateSpan = document.getElementById("selectedDate");
-let currentRow = null;
-let currentDate = null;
+  <script>
+    const times = [
+      "09:00","10:00","11:00","12:00","13:00",
+      "13:30","14:30","15:30","16:30","17:30","18:30","19:30"
+    ];
 
-// Vytvorenie kalendára na 7 dní od dneška
-const today = new Date();
-for(let i=0;i<7;i++){
-  const d = new Date();
-  d.setDate(today.getDate()+i);
-  const opt = document.createElement("option");
-  const weekday = d.toLocaleDateString('sk-SK',{weekday:'short'});
-  opt.value = d.toISOString().split('T')[0]; // YYYY-MM-DD
-  opt.textContent = `${weekday} ${d.toLocaleDateString('sk-SK')}`;
-  dateSelect.appendChild(opt);
-}
-currentDate = dateSelect.value;
+    const tbody = document.querySelector("#schedule tbody");
+    const datePicker = document.getElementById("datePicker");
 
-// Funkcia na vykreslenie tabuľky pre zvolený deň
-function renderSchedule(date){
-  tbody.innerHTML = "";
-  const reservations = JSON.parse(localStorage.getItem("reservations")) || {};
-  times.forEach(time=>{
-    const row = document.createElement("tr");
-    const timeCell = document.createElement("td"); timeCell.textContent = time; row.appendChild(timeCell);
-    const statusCell = document.createElement("td");
-    const actionCell = document.createElement("td");
-    const btn = document.createElement("button"); btn.textContent="Rezervovať"; btn.classList.add("btn");
-    if(reservations[date] && reservations[date][time]){
-      statusCell.textContent="Obsadené"; statusCell.classList.add("booked"); btn.disabled=true;
-    } else {
-      statusCell.textContent="Voľné"; statusCell.classList.add("available");
-      btn.onclick = ()=>{selectedTimeSpan.textContent=time; selectedDateSpan.textContent=date; currentRow=row; currentDate=date; form.style.display="flex";}
+    // uloženie rezervácií podľa dátumu
+    let reservations = {};
+
+    function renderSchedule(date) {
+      tbody.innerHTML = "";
+      if (!date) return;
+
+      // ak ešte pre daný deň nemáme rezervácie → vytvoríme záznam
+      if (!reservations[date]) {
+        reservations[date] = {};
+        times.forEach(time => reservations[date][time] = "Voľné");
+      }
+
+      times.forEach(time => {
+        const row = document.createElement("tr");
+
+        // čas
+        const timeCell = document.createElement("td");
+        timeCell.textContent = time;
+        row.appendChild(timeCell);
+
+        // stav
+        const statusCell = document.createElement("td");
+        statusCell.textContent = reservations[date][time];
+        if (reservations[date][time] === "Voľné") {
+          statusCell.classList.add("available");
+        } else {
+          statusCell.classList.add("booked");
+        }
+        row.appendChild(statusCell);
+
+        // checkbox
+        const selectCell = document.createElement("td");
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        if (reservations[date][time] !== "Voľné") {
+          checkbox.disabled = true;
+        }
+        selectCell.appendChild(checkbox);
+        row.appendChild(selectCell);
+
+        tbody.appendChild(row);
+      });
     }
-    row.appendChild(statusCell); actionCell.appendChild(btn); row.appendChild(actionCell);
-    tbody.appendChild(row);
-  });
-}
 
-dateSelect.onchange = ()=>{
-  currentDate = dateSelect.value;
-  renderSchedule(currentDate);
-}
+    // keď zmeníme dátum
+    datePicker.onchange = () => {
+      renderSchedule(datePicker.value);
+    };
 
-form.onsubmit = e=>{
-  e.preventDefault();
-  if(!currentRow || !currentDate) return;
-  const name = document.getElementById("name").value;
-  const phone = document.getElementById("phone").value;
-  const reservations = JSON.parse(localStorage.getItem("reservations")) || {};
-  if(!reservations[currentDate]) reservations[currentDate]={};
-  const time = currentRow.children[0].textContent;
-  reservations[currentDate][time] = {name, phone};
-  localStorage.setItem("reservations",JSON.stringify(reservations));
+    // odoslanie formulára
+    document.getElementById("bookingForm").onsubmit = function(e) {
+      e.preventDefault();
+      const date = datePicker.value;
+      const name = document.getElementById("name").value;
+      const phone = document.getElementById("phone").value;
 
-  const statusCell = currentRow.children[1]; const btn = currentRow.children[2].firstChild;
-  statusCell.textContent="Obsadené"; statusCell.classList.remove("available"); statusCell.classList.add("booked"); btn.disabled=true;
-  form.reset(); form.style.display="none"; currentRow=null; alert("Rezervácia úspešná!");
-}
+      if (!date) {
+        alert("Prosím, vyberte dátum.");
+        return;
+      }
+      if (!name || !phone) {
+        alert("Prosím, vyplňte meno a telefón.");
+        return;
+      }
 
-renderSchedule(currentDate);
-</script>
+      const rows = tbody.querySelectorAll("tr");
+      rows.forEach(row => {
+        const time = row.children[0].textContent;
+        const statusCell = row.children[1];
+        const checkbox = row.children[2].querySelector("input");
+
+        if (checkbox.checked && reservations[date][time] === "Voľné") {
+          reservations[date][time] = "Obsadené";
+          statusCell.textContent = "Obsadené";
+          statusCell.classList.remove("available");
+          statusCell.classList.add("booked");
+          checkbox.disabled = true;
+        }
+      });
+
+      alert("Rezervácia potvrdená pre " + name + " (" + phone + ") na " + date);
+      document.getElementById("bookingForm").reset();
+      renderSchedule(date);
+    }
+  </script>
 </body>
+</html>
+
 </html>
