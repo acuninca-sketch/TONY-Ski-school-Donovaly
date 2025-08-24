@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin – Cenník</title>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    // 🔥 Firebase config (použi tvoj vlastný)
+    const firebaseConfig = {
+      apiKey: "AIzaSyCf1STUPCcqzuTefIgo2Rca49vpNJY4",
+      authDomain: "lyziarska-skola.firebaseapp.com",
+      projectId: "lyziarska-skola",
+      storageBucket: "lyziarska-skola.appspot.com",
+      messagingSenderId: "59575233692",
+      appId: "1:59575233692:web:c84584d064fc8a79db59",
+      measurementId: "G-KRT4ECRERK"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const ADMIN_PASSWORD = "tajneheslo"; // 
+
+    // Prihlásenie
+    function login(e) {
+      e.preventDefault();
+      const entered = document.getElementById("loginPassword").value;
+      if (entered === ADMIN_PASSWORD) {
+        document.getElementById("loginScreen").style.display = "none";
+        document.getElementById("adminContainer").style.display = "block";
+        loadCennik();
+      } else {
+        alert("❌ Nesprávne heslo!");
+      }
+    }
+
+    // Načítanie cenníka
+    async function loadCennik() {
+      const docRef = doc(db, "cennik", "default");
+      const docSnap = await getDoc(docRef);
+
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        document.getElementById("hodina_individualna").value = data.hodina_individualna || "";
+        document.getElementById("dve_osoby").value = data.dve_osoby || "";
+        document.getElementById("skupina").value = data.skupina || "";
+        document.getElementById("deti").value = data.deti || "";
+      }
+    }
+
+    // Uloženie cenníka
+    async function saveCennik(e) {
+      e.preventDefault();
+
+      const data = {
+        hodina_individualna: document.getElementById("hodina_individualna").value,
+        dve_osoby: document.getElementById("dve_osoby").value,
+        skupina: document.getElementById("skupina").value,
+        deti: document.getElementById("deti").value
+      };
+
+      await setDoc(doc(db, "cennik", "default"), data);
+      alert("✅ Cenník bol uložený!");
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("loginForm").addEventListener("submit", login);
+      document.getElementById("cennikForm").addEventListener("submit", saveCennik);
+    });
+  </script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #121212;
+      color: white;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+    .container {
+      background: #1e1e1e;
+      padding: 20px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 400px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 5px;
+      border: none;
+      border-radius: 8px;
+      background: #2c2c2c;
+      color: white;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      margin-top: 20px;
+      background: #4CAF50;
+      border: none;
+      color: white;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #45a049;
+    }
+  </style>
+</head>
+<body>
+  <!-- Login obrazovka -->
+  <div class="container" id="loginScreen">
+    <h2>🔐 Admin login</h2>
+    <form id="loginForm">
+      <label for="loginPassword">Heslo</label>
+      <input type="password" id="loginPassword" required />
+      <button type="submit">Prihlásiť</button>
+    </form>
+  </div>
+
+  <!-- Admin formulár (skrytý pred prihlásením) -->
+  <div class="container" id="adminContainer" style="display:none;">
+    <h2>Admin – Správa cenníka</h2>
+    <form id="cennikForm">
+      <label for="hodina_individualna">1 hodina individuálna</label>
+      <input type="text" id="hodina_individualna" required />
+
+      <label for="dve_osoby">2 osoby spolu</label>
+      <input type="text" id="dve_osoby" required />
+
+      <label for="skupina">Skupina (3–6 osôb)</label>
+      <input type="text" id="skupina" required />
+
+      <label for="deti">Deti do 6 rokov</label>
+      <input type="text" id="deti" required />
+
+      <button type="submit">💾 Uložiť</button>
+    </form>
+  </div>
+</body>
+</html>
