@@ -6,216 +6,138 @@
   <title>Lyžiarska škola - Rezervácie</title>
   <style>
     body {
-      margin: 0;
       font-family: Arial, sans-serif;
-      background: #f0f8ff;
-      color: #333;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 10px;
-    }
-
-    header {
+      background: linear-gradient(to bottom, #dff9fb, #74b9ff);
+      margin: 0;
+      padding: 0;
       text-align: center;
-      margin: 20px 0;
     }
-
     h1 {
-      font-size: 1.8rem;
-      margin-bottom: 10px;
+      background: #0984e3;
+      color: white;
+      padding: 20px;
+      margin: 0;
     }
-
     table {
-      width: 100%;
-      max-width: 500px;
+      margin: 20px auto;
       border-collapse: collapse;
-      margin-bottom: 20px;
+      width: 95%;
+      max-width: 600px;
     }
-
     th, td {
-      border: 1px solid #ccc;
-      padding: 10px;
+      border: 1px solid #74b9ff;
+      padding: 12px;
       text-align: center;
-      font-size: 0.9rem;
+      font-size: 16px;
     }
-
     th {
-      background: #004080;
+      background-color: #0984e3;
       color: white;
     }
-
-    tr:nth-child(even) {
-      background: #f9f9f9;
-    }
-
-    .available {
-      background: #d4edda;
-    }
-
-    .booked {
-      background: #f8d7da;
-      color: #721c24;
-    }
-
-    .btn {
-      padding: 8px 15px;
-      border: none;
-      background: #007bff;
-      color: white;
-      border-radius: 5px;
+    td.free {
+      background-color: #dff9fb;
       cursor: pointer;
-      font-size: 0.9rem;
-      margin: 10px 5px;
     }
-
-    .btn:disabled {
-      background: #aaa;
-      cursor: not-allowed;
+    td.booked {
+      background-color: #fab1a0;
+      color: #2d3436;
     }
-
-    #reservationsList {
-      margin-top: 20px;
-      max-width: 500px;
-      width: 100%;
-      background: white;
-      border: 1px solid #ccc;
-      border-radius: 8px;
-      padding: 10px;
-      display: none;
+    td.free:hover {
+      background-color: #81ecec;
     }
   </style>
 </head>
 <body>
-  <header>
-    <h1>⛷️ Lyžiarska škola</h1>
-    <p>Rezervujte si viac hodín naraz</p>
-  </header>
+  <h1>Rezervácie Lyžiarska škola</h1>
+  <p>Klikni na voľný termín a rezervuj si hodinu.</p>
 
-  <h2>Dostupné hodiny</h2>
-  <form id="bookingForm">
-    <table id="schedule">
-      <thead>
-        <tr>
-          <th>Čas</th>
-          <th>Stav</th>
-          <th>Vybrať</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
+  <table id="schedule">
+    <thead>
+      <tr>
+        <th>Čas</th>
+        <th>Stav</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- Riadky sa vložia cez JavaScript -->
+    </tbody>
+  </table>
 
-    <label>Meno: <input type="text" id="name" required></label><br><br>
-    <label>Telefón: <input type="tel" id="phone" required></label><br><br>
+  <!-- Firebase SDK -->
+  <script type="module">
+    // Importy Firebase
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs } 
+      from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    <button type="submit" class="btn">Rezervovať vybrané</button>
-    <button type="button" class="btn" onclick="showReservations()">Zobraziť rezervácie</button>
-  </form>
+    // Tvoj Firebase config
+    const firebaseConfig = {
+      apiKey: "AIzaSyC1F7UPCcqzu-TelFgo2Rca49VpNJY4",
+      authDomain: "lyziarska-skola.firebaseapp.com",
+      projectId: "lyziarska-skola",
+      storageBucket: "lyziarska-skola.appspot.com",
+      messagingSenderId: "59575233692",
+      appId: "1:59575233692:web:c4854bd64cf6c8a79db59",
+      measurementId: "G-KRT4ECRERK"
+    };
 
-  <div id="reservationsList">
-    <h3>📋 Zoznam rezervácií</h3>
-    <ul id="reservationsUl"></ul>
-  </div>
+    // Inicializácia Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-  <footer>
-    <p>© 2025 Lyžiarska škola – testovacia verzia</p>
-  </footer>
-
-  <script>
+    // Časy hodín
     const times = [
-      "09:00","10:00","11:00","12:00","13:00",
-      "13:30","14:30","15:30","16:30","17:30","18:30","19:30"
+      "09:00", "10:00", "11:00", "12:00", "13:00",
+      "13:30", "14:30", "15:30", "16:30", "17:30", "18:30", "19:30"
     ];
 
     const tbody = document.querySelector("#schedule tbody");
 
-    // Načítaj rezervácie z LocalStorage
-    let reservations = JSON.parse(localStorage.getItem("reservations")) || [];
+    // Načítanie rezervácií z Firestore
+    async function loadBookings() {
+      const snapshot = await getDocs(collection(db, "bookings"));
+      const bookedTimes = snapshot.docs.map(doc => doc.data().time);
 
-    // Vykresli tabuľku hodín
-    times.forEach(time => {
-      const row = document.createElement("tr");
+      tbody.innerHTML = ""; // vymažeme staré riadky
 
-      const timeCell = document.createElement("td");
-      timeCell.textContent = time;
-      row.appendChild(timeCell);
+      times.forEach(time => {
+        const row = document.createElement("tr");
+        const timeCell = document.createElement("td");
+        timeCell.textContent = time;
 
-      const statusCell = document.createElement("td");
-      const isBooked = reservations.some(r => r.time === time);
-      if (isBooked) {
-        statusCell.textContent = "Obsadené";
-        statusCell.classList.add("booked");
-      } else {
-        statusCell.textContent = "Voľné";
-        statusCell.classList.add("available");
-      }
-      row.appendChild(statusCell);
+        const statusCell = document.createElement("td");
 
-      const selectCell = document.createElement("td");
-      const checkbox = document.createElement("input");
-      checkbox.type = "checkbox";
-      checkbox.disabled = isBooked;
-      selectCell.appendChild(checkbox);
-      row.appendChild(selectCell);
-
-      tbody.appendChild(row);
-    });
-
-    // Rezervácia hodín
-    document.getElementById("bookingForm").onsubmit = function(e) {
-      e.preventDefault();
-      const name = document.getElementById("name").value;
-      const phone = document.getElementById("phone").value;
-
-      if (!name || !phone) {
-        alert("Prosím, vyplňte meno a telefón.");
-        return;
-      }
-
-      const rows = tbody.querySelectorAll("tr");
-      rows.forEach(row => {
-        const statusCell = row.children[1];
-        const checkbox = row.children[2].querySelector("input");
-
-        if (checkbox.checked && statusCell.textContent === "Voľné") {
+        if (bookedTimes.includes(time)) {
           statusCell.textContent = "Obsadené";
-          statusCell.classList.remove("available");
-          statusCell.classList.add("booked");
-          checkbox.disabled = true;
-
-          // uloženie do LocalStorage
-          reservations.push({
-            name,
-            phone,
-            time: row.children[0].textContent,
-            date: new Date().toLocaleDateString()
-          });
+          statusCell.className = "booked";
+        } else {
+          statusCell.textContent = "Voľné (klikni)";
+          statusCell.className = "free";
+          statusCell.onclick = () => bookTime(time);
         }
+
+        row.appendChild(timeCell);
+        row.appendChild(statusCell);
+        tbody.appendChild(row);
       });
-
-      localStorage.setItem("reservations", JSON.stringify(reservations));
-      alert("Rezervácia potvrdená pre " + name + " (" + phone + ")");
-      document.getElementById("bookingForm").reset();
     }
 
-    // Zobrazenie rezervácií
-    function showReservations() {
-      const listDiv = document.getElementById("reservationsList");
-      const listUl = document.getElementById("reservationsUl");
-      listUl.innerHTML = "";
-
-      if (reservations.length === 0) {
-        listUl.innerHTML = "<li>Žiadne rezervácie</li>";
-      } else {
-        reservations.forEach(r => {
-          const li = document.createElement("li");
-          li.textContent = `${r.date} - ${r.time} (${r.name}, ${r.phone})`;
-          listUl.appendChild(li);
+    // Rezervácia hodiny
+    async function bookTime(time) {
+      try {
+        await addDoc(collection(db, "bookings"), {
+          time: time,
+          created: new Date()
         });
+        alert(`Rezervoval si čas ${time}`);
+        loadBookings(); // obnov tabuľku
+      } catch (e) {
+        console.error("Chyba pri rezervácii: ", e);
       }
-
-      listDiv.style.display = "block";
     }
+
+    // Spustenie
+    loadBookings();
   </script>
 </body>
 </html>
