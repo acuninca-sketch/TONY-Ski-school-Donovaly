@@ -141,73 +141,16 @@
   <!-- Tlačidlo cenník -->
   <button id="openCennik">Cenník</button>
 
- <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-  import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyCf1STUPCcqzuTefIgo2Rca49vpNJY4",
-    authDomain: "lyziarska-skola.firebaseapp.com",
-    projectId: "lyziarska-skola",
-    storageBucket: "lyziarska-skola.appspot.com",
-    messagingSenderId: "59575233692",
-    appId: "1:59575233692:web:c84584d064fc8a79db59",
-    measurementId: "G-KRT4ECRERK"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-
-  // Načítanie cenníka
-  async function loadCennik() {
-    const docRef = doc(db, "cennik", "default");
-    const docSnap = await getDoc(docRef);
-
-    if (docSnap.exists()) {
-      const data = docSnap.data();
-      document.getElementById("cennikContent").innerHTML = `
-        <h3>Cenník</h3>
-        <p>1 hodina individuálna: ${data.hodina_individualna}</p>
-        <p>Skupina (3-6 osôb): ${data.skupina}</p>
-    
-      `;
-    } else {
-      document.getElementById("cennikContent").innerHTML = `
-        <h3>Cenník</h3>
-        <p>⚠️ Cenník zatiaľ nie je nastavený v databáze</p>
-      `;
-    }
-  }
-
-  document.addEventListener("DOMContentLoaded", () => {
-    const modal = document.getElementById("cennikModal");
-    const closeBtn = document.getElementById("closeModal");
-
-    document.getElementById("cennikBtn").addEventListener("click", () => {
-      loadCennik();
-      modal.style.display = "flex";
-    });
-
-    closeBtn.addEventListener("click", () => {
-      modal.style.display = "none";
-    });
-
-    window.addEventListener("click", (e) => {
-      if (e.target === modal) modal.style.display = "none";
-    });
-  });
-</script>
-
-<!-- Modal -->
-<div id="cennikModal" class="modal">
-  <div class="modal-content">
-    <span id="closeModal" class="close">❌</span>
+  <!-- Popup cenník -->
+  <div id="cennikPopup">
     <div id="cennikContent">
-      <!-- Tu sa načíta cenník z Firebase -->
+      <span id="closeCennik">&times;</span>
+      <h2>Cenník</h2>
+      <p>1 hodina: 25 €</p>
+      <p>2 hodiny: 45 €</p>
+      <p>Celodenný kurz: 90 €</p>
     </div>
   </div>
-</div>
-
 
   <!-- Pätička s nenápadným admin odkazom -->
   <footer>
@@ -215,21 +158,23 @@
     <a href="cennik-admin.html">Admin</a>
   </footer>
 
+  <script>
   <!-- Firebase SDK -->
   <script type="module">
-    // Tvoj Firebase config sem vložíš
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    // Firebase SDK import
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
- const firebaseConfig = {
-    apiKey: "AIzaSyC1F7UPCcqzu-TelFgo2Rca49VpNJY4",
-    authDomain: "lyziarska-skola.firebaseapp.com",
-    projectId: "lyziarska-skola",
-    storageBucket: "lyziarska-skola.appspot.com",
-    messagingSenderId: "59575233692",
-    appId: "1:59575233692:web:c4854bd64cf6c8a79db59",
-    measurementId: "G-KRT4ECRERK"
-  };
+    // Firebase config (toto je z tvojho screenshotu)
+    const firebaseConfig = {
+      apiKey: "AIzaSyCf1STUPCcqzuTefIgo2Rca49vpNJY4",
+      authDomain: "lyziarska-skola.firebaseapp.com",
+      projectId: "lyziarska-skola",
+      storageBucket: "lyziarska-skola.appspot.com",
+      messagingSenderId: "59575233692",
+      appId: "1:59575233692:web:c84584d064fc8a79db59",
+      measurementId: "G-KRT4ECRERK"
+    };
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
@@ -240,6 +185,16 @@
 
     // Časové sloty
     const slots = [
+      "09:00 - 09:55",
+      "10:00 - 10:55",
+      "11:00 - 11:55",
+      "12:00 - 12:55",
+      "13:30 - 14:25",
+      "14:30 - 15:25",
+      "15:30 - 16:25",
+      "16:30 - 17:25",
+      "17:30 - 18:25",
+      "18:30 - 19:25"
       "09:00 - 09:55","10:00 - 10:55","11:00 - 11:55","12:00 - 12:55",
       "13:30 - 14:25","14:30 - 15:25","15:30 - 16:25","16:30 - 17:25",
       "17:30 - 18:25","18:30 - 19:25"
@@ -247,13 +202,16 @@
 
     let selectedSlots = [];
 
+    // Načítať tabuľku s voľnými slotmi
     function loadTimetable() {
       timetable.innerHTML = "";
       selectedSlots = [];
+
       slots.forEach(time => {
         const tr = document.createElement("tr");
         const tdTime = document.createElement("td");
         tdTime.textContent = time;
+
         const tdStatus = document.createElement("td");
         tdStatus.textContent = "Voľné";
         tdStatus.classList.add("free");
@@ -277,14 +235,18 @@
       });
     }
 
+    // Pri načítaní nastav dnešný dátum
     window.addEventListener("DOMContentLoaded", () => {
       const today = new Date().toISOString().split("T")[0];
       dateInput.value = today;
       loadTimetable();
     });
 
+    // Rezervácia
+    form.addEventListener("submit", (e) => {
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
+
       if (selectedSlots.length === 0) {
         alert("Prosím vyber aspoň jednu hodinu.");
         return;
@@ -300,6 +262,8 @@
         slots: selectedSlots
       };
 
+      console.log("Rezervácia:", data);
+      alert("Rezervácia bola odoslaná! (dáta zatiaľ iba v konzole)");
       try {
         await addDoc(collection(db, "rezervacie"), data);
         alert("Rezervácia bola úspešne uložená!");
