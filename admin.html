@@ -1,123 +1,95 @@
 <!DOCTYPE html>
 <html lang="sk">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin - Rezervácie</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f1f2f6;
-      margin: 0;
-      padding: 20px;
-    }
-    h1 {
-      text-align: center;
-      color: #2d3436;
-    }
-    table {
-      margin: 20px auto;
-      border-collapse: collapse;
-      width: 95%;
-      max-width: 900px;
-      background: white;
-      box-shadow: 0px 2px 6px rgba(0,0,0,0.1);
-    }
-    th, td {
-      border: 1px solid #b2bec3;
-      padding: 10px;
-      text-align: center;
-    }
-    th {
-      background: #0984e3;
-      color: white;
-    }
-    button {
-      background: #d63031;
-      color: white;
-      border: none;
-      padding: 6px 12px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 14px;
-    }
-    button:hover {
-      background: #ff7675;
-    }
-  </style>
-</head>
-<body>
-  <h1>Admin - Prehľad rezervácií</h1>
-
-  <table id="bookingsTable">
-    <thead>
-      <tr>
-        <th>Meno</th>
-        <th>Telefón</th>
-        <th>Dátum</th>
-        <th>Čas</th>
-        <th>Akcia</th>
-      </tr>
-    </thead>
-    <tbody>
-      <!-- Rezervácie sa načítajú cez JS -->
-    </tbody>
-  </table>
-
-  <!-- Firebase SDK -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin – Rezervácie</title>
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, getDocs, deleteDoc, doc, orderBy, query } 
-      from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
+    // Firebase config (rovnaký ako na klientovi)
     const firebaseConfig = {
-      apiKey: "AIzaSyC1F7UPCcqzu-TelFgo2Rca49VpNJY4",
+      apiKey: "AIzaSyCf1STUPCcqzuTefIgo2Rca49vpNJY4",
       authDomain: "lyziarska-skola.firebaseapp.com",
       projectId: "lyziarska-skola",
       storageBucket: "lyziarska-skola.appspot.com",
       messagingSenderId: "59575233692",
-      appId: "1:59575233692:web:c4854bd64cf6c8a79db59",
+      appId: "1:59575233692:web:c84584d064fc8a79db59",
       measurementId: "G-KRT4ECRERK"
     };
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    const tableBody = document.querySelector("#bookingsTable tbody");
+    // načíta rezervácie pre daný dátum
+    async function loadReservations(date) {
+      const list = document.getElementById("reservations");
+      list.innerHTML = "";
 
-    // Načíta všetky rezervácie
-    async function loadBookings() {
-      tableBody.innerHTML = "";
+      const dayDoc = await getDoc(doc(db, "rezervacie", date));
+      if (!dayDoc.exists()) {
+        list.innerHTML = "<p>Žiadne rezervácie na tento deň.</p>";
+        return;
+      }
 
-      const q = query(collection(db, "bookings"), orderBy("date"));
-      const snapshot = await getDocs(q);
+      const data = dayDoc.data();
+      const rezervacie = data.rezervacie || [];
 
-      snapshot.forEach(docSnap => {
-        const booking = docSnap.data();
-        const row = document.createElement("tr");
-
-        row.innerHTML = `
-          <td>${booking.name}</td>
-          <td>${booking.phone}</td>
-          <td>${booking.date}</td>
-          <td>${booking.time}</td>
-          <td><button onclick="deleteBooking('${docSnap.id}')">Zmazať</button></td>
+      rezervacie.forEach((r, index) => {
+        const div = document.createElement("div");
+        div.className = "rezervacia";
+        div.innerHTML = `
+          <p><b>${r.name}</b> (${r.phone})</p>
+          <p>Hodiny: ${r.selected.join(", ")}</p>
+          <button data-index="${index}">Zmazať</button>
         `;
+        list.appendChild(div);
+      });
 
-        tableBody.appendChild(row);
+      // pridáme event listener na mazanie
+      document.querySelectorAll(".rezervacia button").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const index = btn.dataset.index;
+          rezervacie.splice(index, 1);
+          const newTimes = rezervacie.flatMap(r => r.selected);
+          await setDoc(doc(db, "rezervacie", date), {
+            times: newTimes,
+            rezervacie: rezervacie
+          });
+          loadReservations(date);
+        });
       });
     }
 
-    // Zmazanie rezervácie
-    window.deleteBooking = async function(id) {
-      if (confirm("Naozaj chceš zrušiť túto rezerváciu?")) {
-        await deleteDoc(doc(db, "bookings", id));
-        alert("Rezervácia zmazaná");
-        loadBookings();
-      }
-    };
+    window.addEventListener("DOMContentLoaded", () => {
+      const dateInput = document.getElementById("date");
 
-    loadBookings();
+      // predvolene dnešný dátum
+      const today = new Date().toISOString().split("T")[0];
+      dateInput.value = today;
+      loadReservations(today);
+
+      dateInput.addEventListener("change", e => loadReservations(e.target.value));
+    });
   </script>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f2f2f2; }
+    .container { max-width: 700px; margin: 30px auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    h2 { text-align: center; }
+    input { width: 100%; padding: 10px; margin: 10px 0; }
+    .rezervacia { border: 1px solid #ddd; padding: 10px; margin: 10px 0; border-radius: 5px; background: #fafafa; }
+    .rezervacia button { background: red; color: white; border: none; padding: 8px 12px; cursor: pointer; border-radius: 5px; }
+    .rezervacia button:hover { background: darkred; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Admin – Rezervácie</h2>
+    <label for="date">Vyber dátum:</label>
+    <input type="date" id="date" />
+
+    <div id="reservations"></div>
+  </div>
 </body>
 </html>
