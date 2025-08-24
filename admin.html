@@ -12,25 +12,24 @@
       padding: 20px;
     }
     h1 {
-      color: #2d3436;
       text-align: center;
+      color: #2d3436;
     }
     table {
       margin: 20px auto;
       border-collapse: collapse;
       width: 95%;
-      max-width: 700px;
+      max-width: 900px;
       background: white;
       box-shadow: 0px 2px 6px rgba(0,0,0,0.1);
     }
     th, td {
       border: 1px solid #b2bec3;
-      padding: 12px;
+      padding: 10px;
       text-align: center;
-      font-size: 16px;
     }
     th {
-      background-color: #0984e3;
+      background: #0984e3;
       color: white;
     }
     button {
@@ -40,6 +39,7 @@
       padding: 6px 12px;
       border-radius: 6px;
       cursor: pointer;
+      font-size: 14px;
     }
     button:hover {
       background: #ff7675;
@@ -47,12 +47,15 @@
   </style>
 </head>
 <body>
-  <h1>Admin panel - Rezervácie</h1>
+  <h1>Admin - Prehľad rezervácií</h1>
+
   <table id="bookingsTable">
     <thead>
       <tr>
+        <th>Meno</th>
+        <th>Telefón</th>
+        <th>Dátum</th>
         <th>Čas</th>
-        <th>Dátum vytvorenia</th>
         <th>Akcia</th>
       </tr>
     </thead>
@@ -64,10 +67,9 @@
   <!-- Firebase SDK -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, getDocs, deleteDoc, doc } 
+    import { getFirestore, collection, getDocs, deleteDoc, doc, orderBy, query } 
       from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    // Tvoj Firebase config (rovnaký ako v index.html)
     const firebaseConfig = {
       apiKey: "AIzaSyC1F7UPCcqzu-TelFgo2Rca49VpNJY4",
       authDomain: "lyziarska-skola.firebaseapp.com",
@@ -78,50 +80,42 @@
       measurementId: "G-KRT4ECRERK"
     };
 
-    // Inicializácia
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    const tbody = document.querySelector("#bookingsTable tbody");
+    const tableBody = document.querySelector("#bookingsTable tbody");
 
-    // Načítanie rezervácií
+    // Načíta všetky rezervácie
     async function loadBookings() {
-      const snapshot = await getDocs(collection(db, "bookings"));
-      tbody.innerHTML = "";
+      tableBody.innerHTML = "";
+
+      const q = query(collection(db, "bookings"), orderBy("date"));
+      const snapshot = await getDocs(q);
 
       snapshot.forEach(docSnap => {
-        const data = docSnap.data();
+        const booking = docSnap.data();
         const row = document.createElement("tr");
 
-        const timeCell = document.createElement("td");
-        timeCell.textContent = data.time;
+        row.innerHTML = `
+          <td>${booking.name}</td>
+          <td>${booking.phone}</td>
+          <td>${booking.date}</td>
+          <td>${booking.time}</td>
+          <td><button onclick="deleteBooking('${docSnap.id}')">Zmazať</button></td>
+        `;
 
-        const dateCell = document.createElement("td");
-        dateCell.textContent = data.created?.toDate 
-          ? data.created.toDate().toLocaleString()
-          : "—";
-
-        const actionCell = document.createElement("td");
-        const deleteBtn = document.createElement("button");
-        deleteBtn.textContent = "Vymazať";
-        deleteBtn.onclick = () => deleteBooking(docSnap.id);
-
-        actionCell.appendChild(deleteBtn);
-
-        row.appendChild(timeCell);
-        row.appendChild(dateCell);
-        row.appendChild(actionCell);
-        tbody.appendChild(row);
+        tableBody.appendChild(row);
       });
     }
 
-    // Vymazanie rezervácie
-    async function deleteBooking(id) {
-      if (confirm("Naozaj chceš zmazať túto rezerváciu?")) {
+    // Zmazanie rezervácie
+    window.deleteBooking = async function(id) {
+      if (confirm("Naozaj chceš zrušiť túto rezerváciu?")) {
         await deleteDoc(doc(db, "bookings", id));
-        loadBookings(); // refresh tabuľky
+        alert("Rezervácia zmazaná");
+        loadBookings();
       }
-    }
+    };
 
     loadBookings();
   </script>
