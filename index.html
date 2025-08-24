@@ -69,6 +69,31 @@
       text-decoration: none;
       margin-left: 15px;
     }
+
+    /* Popup cenník */
+    #cennikPopup {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.8);
+    }
+    #cennikContent {
+      background: #111;
+      margin: 15% auto;
+      padding: 20px;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 400px;
+      color: #fff;
+    }
+    #closeCennik {
+      float: right;
+      cursor: pointer;
+      color: red;
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
@@ -113,43 +138,66 @@
     <button type="submit">Rezervovať</button>
   </form>
 
+  <!-- Tlačidlo cenník -->
+  <button id="openCennik">Cenník</button>
+
+  <!-- Popup cenník -->
+  <div id="cennikPopup">
+    <div id="cennikContent">
+      <span id="closeCennik">&times;</span>
+      <h2>Cenník</h2>
+      <p>1 hodina: 49 €</p>
+      <p>2 hodiny: 79 €</p>
+      <p>Každá ďaľšia osoba 20 €</p>
+    </div>
+  </div>
+
   <!-- Pätička s nenápadným admin odkazom -->
   <footer>
     © 2025 Lyžiarska škola  
     <a href="cennik-admin.html">Admin</a>
   </footer>
 
-  <script>
+  <!-- Firebase SDK -->
+  <script type="module">
+    // Tvoj Firebase config sem vložíš
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+     apiKey: "AIzaSyCf1STUPCcqzuTefIgo2Rca49vpNJY4",
+      authDomain: "lyziarska-skola.firebaseapp.com",
+      projectId: "lyziarska-skola",
+      storageBucket: "lyziarska-skola.appspot.com",
+      messagingSenderId: "59575233692",
+      appId: "1:59575233692:web:c84584d064fc8a79db59",
+      measurementId: "G-KRT4ECRERK"
+    };
+
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
     const timetable = document.querySelector("#timetable tbody");
     const form = document.getElementById("reservationForm");
     const dateInput = document.getElementById("date");
 
     // Časové sloty
     const slots = [
-      "09:00 - 09:55",
-      "10:00 - 10:55",
-      "11:00 - 11:55",
-      "12:00 - 12:55",
-      "13:30 - 14:25",
-      "14:30 - 15:25",
-      "15:30 - 16:25",
-      "16:30 - 17:25",
-      "17:30 - 18:25",
-      "18:30 - 19:25"
+      "09:00 - 09:55","10:00 - 10:55","11:00 - 11:55","12:00 - 12:55",
+      "13:30 - 14:25","14:30 - 15:25","15:30 - 16:25","16:30 - 17:25",
+      "17:30 - 18:25","18:30 - 19:25"
     ];
 
     let selectedSlots = [];
 
-    // Načítať tabuľku s voľnými slotmi
     function loadTimetable() {
       timetable.innerHTML = "";
       selectedSlots = [];
-
       slots.forEach(time => {
         const tr = document.createElement("tr");
         const tdTime = document.createElement("td");
         tdTime.textContent = time;
-
         const tdStatus = document.createElement("td");
         tdStatus.textContent = "Voľné";
         tdStatus.classList.add("free");
@@ -173,17 +221,14 @@
       });
     }
 
-    // Pri načítaní nastav dnešný dátum
     window.addEventListener("DOMContentLoaded", () => {
       const today = new Date().toISOString().split("T")[0];
       dateInput.value = today;
       loadTimetable();
     });
 
-    // Rezervácia
-    form.addEventListener("submit", (e) => {
+    form.addEventListener("submit", async (e) => {
       e.preventDefault();
-
       if (selectedSlots.length === 0) {
         alert("Prosím vyber aspoň jednu hodinu.");
         return;
@@ -199,12 +244,26 @@
         slots: selectedSlots
       };
 
-      console.log("Rezervácia:", data);
-      alert("Rezervácia bola odoslaná! (dáta zatiaľ iba v konzole)");
+      try {
+        await addDoc(collection(db, "rezervacie"), data);
+        alert("Rezervácia bola úspešne uložená!");
+      } catch (err) {
+        console.error("Chyba pri ukladaní:", err);
+        alert("Nepodarilo sa uložiť rezerváciu.");
+      }
 
       form.reset();
       loadTimetable();
     });
+
+    // Popup cenník
+    const popup = document.getElementById("cennikPopup");
+    const openBtn = document.getElementById("openCennik");
+    const closeBtn = document.getElementById("closeCennik");
+    openBtn.onclick = () => popup.style.display = "block";
+    closeBtn.onclick = () => popup.style.display = "none";
+    window.onclick = (e) => { if (e.target == popup) popup.style.display = "none"; };
   </script>
 </body>
 </html>
+
