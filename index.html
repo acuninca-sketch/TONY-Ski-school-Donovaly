@@ -146,9 +146,9 @@
     <div id="cennikContent">
       <span id="closeCennik">&times;</span>
       <h2>Cenník</h2>
-      <p>1 hodina: 25 €</p>
-      <p>2 hodiny: 45 €</p>
-      <p>Celodenný kurz: 90 €</p>
+      <p>1 hodina: 49 €</p>
+      <p>2 hodiny: 79 €</p>
+      <p>Každá ďaľšia osoba: +20 €</p>
     </div>
   </div>
 
@@ -158,14 +158,12 @@
     <a href="cennik-admin.html">Admin</a>
   </footer>
 
-  <script>
   <!-- Firebase SDK -->
   <script type="module">
-    // Firebase SDK import
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    // Tvoj Firebase config sem vložíš
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    // Firebase config (toto je z tvojho screenshotu)
     const firebaseConfig = {
       apiKey: "AIzaSyCf1STUPCcqzuTefIgo2Rca49vpNJY4",
       authDomain: "lyziarska-skola.firebaseapp.com",
@@ -185,16 +183,6 @@
 
     // Časové sloty
     const slots = [
-      "09:00 - 09:55",
-      "10:00 - 10:55",
-      "11:00 - 11:55",
-      "12:00 - 12:55",
-      "13:30 - 14:25",
-      "14:30 - 15:25",
-      "15:30 - 16:25",
-      "16:30 - 17:25",
-      "17:30 - 18:25",
-      "18:30 - 19:25"
       "09:00 - 09:55","10:00 - 10:55","11:00 - 11:55","12:00 - 12:55",
       "13:30 - 14:25","14:30 - 15:25","15:30 - 16:25","16:30 - 17:25",
       "17:30 - 18:25","18:30 - 19:25"
@@ -202,16 +190,13 @@
 
     let selectedSlots = [];
 
-    // Načítať tabuľku s voľnými slotmi
     function loadTimetable() {
       timetable.innerHTML = "";
       selectedSlots = [];
-
       slots.forEach(time => {
         const tr = document.createElement("tr");
         const tdTime = document.createElement("td");
         tdTime.textContent = time;
-
         const tdStatus = document.createElement("td");
         tdStatus.textContent = "Voľné";
         tdStatus.classList.add("free");
@@ -235,18 +220,14 @@
       });
     }
 
-    // Pri načítaní nastav dnešný dátum
     window.addEventListener("DOMContentLoaded", () => {
       const today = new Date().toISOString().split("T")[0];
       dateInput.value = today;
       loadTimetable();
     });
 
-    // Rezervácia
-    form.addEventListener("submit", (e) => {
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
-
       if (selectedSlots.length === 0) {
         alert("Prosím vyber aspoň jednu hodinu.");
         return;
@@ -262,8 +243,6 @@
         slots: selectedSlots
       };
 
-      console.log("Rezervácia:", data);
-      alert("Rezervácia bola odoslaná! (dáta zatiaľ iba v konzole)");
       try {
         await addDoc(collection(db, "rezervacie"), data);
         alert("Rezervácia bola úspešne uložená!");
