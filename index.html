@@ -3,74 +3,107 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lyžiarska škola - Rezervácie</title>
+  <title>Rezervácia lyžiarskej školy</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: linear-gradient(to bottom, #dff9fb, #74b9ff);
+      background: #f1f2f6;
       margin: 0;
-      padding: 0;
-      text-align: center;
+      padding: 20px;
     }
     h1 {
-      background: #0984e3;
-      color: white;
-      padding: 20px;
-      margin: 0;
+      text-align: center;
+      color: #2d3436;
+    }
+    .form-section {
+      max-width: 500px;
+      margin: 20px auto;
+      padding: 15px;
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0px 2px 6px rgba(0,0,0,0.1);
+    }
+    label {
+      display: block;
+      margin: 10px 0 5px;
+      font-weight: bold;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border-radius: 6px;
+      border: 1px solid #b2bec3;
+      font-size: 16px;
     }
     table {
       margin: 20px auto;
       border-collapse: collapse;
       width: 95%;
-      max-width: 600px;
+      max-width: 700px;
+      background: white;
+      box-shadow: 0px 2px 6px rgba(0,0,0,0.1);
     }
     th, td {
-      border: 1px solid #74b9ff;
+      border: 1px solid #b2bec3;
       padding: 12px;
       text-align: center;
-      font-size: 16px;
     }
     th {
-      background-color: #0984e3;
+      background: #0984e3;
       color: white;
     }
-    td.free {
-      background-color: #dff9fb;
+    button {
+      background: #00b894;
+      color: white;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 6px;
       cursor: pointer;
+      font-size: 14px;
     }
-    td.booked {
-      background-color: #fab1a0;
-      color: #2d3436;
+    button:disabled {
+      background: #636e72;
+      cursor: not-allowed;
     }
-    td.free:hover {
-      background-color: #81ecec;
+    button:hover:enabled {
+      background: #55efc4;
     }
   </style>
 </head>
 <body>
-  <h1>Rezervácie Lyžiarska škola</h1>
-  <p>Klikni na voľný termín a rezervuj si hodinu.</p>
+  <h1>Rezervácia lyžiarskej školy</h1>
 
-  <table id="schedule">
+  <div class="form-section">
+    <label for="name">Meno a priezvisko</label>
+    <input type="text" id="name" placeholder="Zadajte meno" required>
+
+    <label for="phone">Telefón</label>
+    <input type="tel" id="phone" placeholder="Zadajte telefónne číslo" required>
+
+    <label for="date">Dátum</label>
+    <input type="date" id="date" required>
+  </div>
+
+  <h2 style="text-align:center">Dostupné hodiny</h2>
+  <table id="slotsTable">
     <thead>
       <tr>
         <th>Čas</th>
-        <th>Stav</th>
+        <th>Rezervovať</th>
       </tr>
     </thead>
     <tbody>
-      <!-- Riadky sa vložia cez JavaScript -->
+      <!-- Sloty sa načítajú cez JS -->
     </tbody>
   </table>
 
   <!-- Firebase SDK -->
   <script type="module">
-    // Importy Firebase
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, collection, addDoc, getDocs } 
+    import { getFirestore, collection, addDoc, getDocs, query, where } 
       from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    // Tvoj Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyC1F7UPCcqzu-TelFgo2Rca49VpNJY4",
       authDomain: "lyziarska-skola.firebaseapp.com",
@@ -81,63 +114,81 @@
       measurementId: "G-KRT4ECRERK"
     };
 
-    // Inicializácia Firebase
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Časy hodín
-    const times = [
-      "09:00", "10:00", "11:00", "12:00", "13:00",
-      "13:30", "14:30", "15:30", "16:30", "17:30", "18:30", "19:30"
+    const slots = [
+      "09:00", "10:00", "11:00", "12:00",
+      "13:30", "14:30", "15:30", "16:30",
+      "17:30", "18:30", "19:30"
     ];
 
-    const tbody = document.querySelector("#schedule tbody");
+    const tableBody = document.querySelector("#slotsTable tbody");
 
-    // Načítanie rezervácií z Firestore
-    async function loadBookings() {
-      const snapshot = await getDocs(collection(db, "bookings"));
-      const bookedTimes = snapshot.docs.map(doc => doc.data().time);
-
-      tbody.innerHTML = ""; // vymažeme staré riadky
-
-      times.forEach(time => {
+    // Vygeneruje tabuľku
+    function renderSlots(disabledSlots = []) {
+      tableBody.innerHTML = "";
+      slots.forEach(time => {
         const row = document.createElement("tr");
+
         const timeCell = document.createElement("td");
         timeCell.textContent = time;
 
-        const statusCell = document.createElement("td");
+        const actionCell = document.createElement("td");
+        const btn = document.createElement("button");
+        btn.textContent = disabledSlots.includes(time) ? "Obsadené" : "Rezervovať";
+        btn.disabled = disabledSlots.includes(time);
 
-        if (bookedTimes.includes(time)) {
-          statusCell.textContent = "Obsadené";
-          statusCell.className = "booked";
-        } else {
-          statusCell.textContent = "Voľné (klikni)";
-          statusCell.className = "free";
-          statusCell.onclick = () => bookTime(time);
-        }
+        btn.onclick = () => bookSlot(time);
+
+        actionCell.appendChild(btn);
 
         row.appendChild(timeCell);
-        row.appendChild(statusCell);
-        tbody.appendChild(row);
+        row.appendChild(actionCell);
+        tableBody.appendChild(row);
       });
     }
 
-    // Rezervácia hodiny
-    async function bookTime(time) {
-      try {
-        await addDoc(collection(db, "bookings"), {
-          time: time,
-          created: new Date()
-        });
-        alert(`Rezervoval si čas ${time}`);
-        loadBookings(); // obnov tabuľku
-      } catch (e) {
-        console.error("Chyba pri rezervácii: ", e);
+    // Rezervácia
+    async function bookSlot(time) {
+      const name = document.getElementById("name").value.trim();
+      const phone = document.getElementById("phone").value.trim();
+      const date = document.getElementById("date").value;
+
+      if (!name || !phone || !date) {
+        alert("Prosím vyplňte meno, telefón a dátum!");
+        return;
       }
+
+      await addDoc(collection(db, "bookings"), {
+        name,
+        phone,
+        date,
+        time,
+        created: new Date()
+      });
+
+      alert(`Rezervácia potvrdená: ${date} ${time}`);
+      loadBookings(date);
     }
 
-    // Spustenie
-    loadBookings();
+    // Načíta rezervácie pre daný deň
+    async function loadBookings(date) {
+      const q = query(collection(db, "bookings"), where("date", "==", date));
+      const snapshot = await getDocs(q);
+      const bookedTimes = snapshot.docs.map(doc => doc.data().time);
+      renderSlots(bookedTimes);
+    }
+
+    // Keď zmením dátum
+    document.getElementById("date").addEventListener("change", (e) => {
+      const date = e.target.value;
+      if (date) {
+        loadBookings(date);
+      }
+    });
+
+    renderSlots();
   </script>
 </body>
 </html>
