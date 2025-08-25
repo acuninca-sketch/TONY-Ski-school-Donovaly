@@ -188,15 +188,14 @@
 
       <label>Telefón</label>
       <input type="text" id="phone">
-
       <label>Email</label>
       <input type="email" id="email">
 
       <label>Poznámka</label>
       <textarea id="note"></textarea>
 
-      <button id="submitReservation">📌 Rezervovať vybraté hodiny</button>
-      <a href="cennik.html" class="cennik-btn">📋 Cenník</a>
+      <button id="reserveBtn">Rezervovať vybraté hodiny</button>
+<button id="cennikBtn" onclick="openCennik()">Cenník</button>
     </div>
   </div>
 
@@ -298,6 +297,72 @@
     dateInput.valueAsDate = new Date();
     loadReservations();
   </script>
+  <!-- Popup Cenník -->
+<div id="cennikModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeCennik()">&times;</span>
+    <div id="cennikContent">Načítavam cenník...</div>
+  </div>
+</div>
+
+<style>
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0; top: 0;
+    width: 100%; height: 100%;
+    background-color: rgba(0,0,0,0.8);
+    justify-content: center;
+    align-items: center;
+  }
+  .modal-content {
+    background: #111;
+    color: #fff;
+    padding: 20px;
+    border-radius: 12px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 80%;
+    overflow-y: auto;
+    box-shadow: 0 0 20px rgba(255,255,255,0.3);
+  }
+  .close {
+    float: right;
+    font-size: 28px;
+    cursor: pointer;
+  }
+</style>
+
+<script>
+  async function openCennik() {
+    const modal = document.getElementById("cennikModal");
+    const content = document.getElementById("cennikContent");
+
+    try {
+      const response = await fetch("cennik-admin.html");
+      const html = await response.text();
+      content.innerHTML = html;
+    } catch (error) {
+      content.innerHTML = "<p style='color:red;'>Nepodarilo sa načítať cenník.</p>";
+    }
+
+    modal.style.display = "flex";
+  }
+
+  function closeCennik() {
+    document.getElementById("cennikModal").style.display = "none";
+  }
+
+  // Zavrie popup kliknutím mimo obsahu
+  window.onclick = function(event) {
+    const modal = document.getElementById("cennikModal");
+    if (event.target === modal) {
+      modal.style.display = "none";
+    }
+  };
+</script>
+
 </body>
 </html>
 
