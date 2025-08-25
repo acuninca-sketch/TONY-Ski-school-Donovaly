@@ -1,69 +1,15 @@
 <!DOCTYPE html>
 <html lang="sk">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Admin – Rezervácie</title>
-  <style>
-    :root{--bg:#000;--fg:#fff;--card:#111;--border:#333;--danger:#a00000;--btn:#444}
-    body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui,Arial,sans-serif}
-    .wrap{max-width:780px;margin:0 auto;padding:16px}
-    h1{margin:8px 0 12px;text-align:center}
-    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px}
-    .row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-    input,select,button{width:100%;padding:10px;border-radius:10px;border:1px solid var(--border);background:#111;color:#fff}
-    button.danger{background:var(--danger);border:none}
-    table{width:100%;border-collapse:collapse;margin-top:12px}
-    th,td{border:1px solid var(--border);padding:8px;text-align:center;font-size:14px}
-    th{background:#0f0f0f}
-    .muted{opacity:.7;font-size:12px}
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <h1>Admin – Rezervácie</h1>
-
-    <div class="card">
-      <div class="row">
-        <div>
-          <label for="fDate" class="muted">Filter dátumu</label>
-          <input id="fDate" type="date">
-        </div>
-        <div>
-          <label for="fSport" class="muted">Šport</label>
-          <select id="fSport">
-            <option value="">Všetko</option>
-            <option value="lyze">Lyže</option>
-            <option value="snb">Snowboard</option>
-          </select>
-        </div>
-        <div style="display:flex;gap:8px;align-items:end">
-          <button id="reload">Načítať</button>
-          <button id="clear" class="danger">Reset filtrov</button>
-        </div>
-      </div>
-
-      <table>
-        <thead>
-          <tr>
-            <th>Dátum</th><th>Šport</th><th>Meno</th><th>Tel</th><th>Email</th><th>Pozn.</th><th>Hodiny</th><th>Akcia</th>
-          </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-      </table>
-    </div>
-
-    <p class="muted" style="text-align:center;margin-top:10px">Po zmazaní rezervácie sa sloty automaticky uvoľnia.</p>
-  </div>
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - Rezervácie</title>
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import {
-      getFirestore, collection, getDocs, query, where, orderBy,
-      doc, runTransaction, deleteDoc, arrayRemove
-    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, collection, getDocs, doc, updateDoc } 
+      from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-    // TODO: vlož sem svoj Firebase config
+    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyCf1STUPCcqzuTefIgo2Rca49vpNJY4",
       authDomain: "lyziarska-skola.firebaseapp.com",
@@ -74,90 +20,128 @@
       measurementId: "G-KRT4ECRERK"
     };
 
-    // jednoduchý "login"
-    const ADMIN_PASSWORD = "tajneheslo123"; // zmeň si!
-    const entered = prompt("Zadaj admin heslo:");
-    if (entered !== ADMIN_PASSWORD) {
-      document.body.innerHTML = "<h2 style='color:#fff;text-align:center;margin-top:30px'>Neoprávnený prístup ❌</h2>";
-      throw new Error("Unauthorized");
-    }
-
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    const tbody = document.getElementById("tbody");
-    const fDate = document.getElementById("fDate");
-    const fSport = document.getElementById("fSport");
-    const reloadBtn = document.getElementById("reload");
-    const clearBtn = document.getElementById("clear");
+    async function loadReservations() {
+      const container = document.getElementById("reservations");
+      container.innerHTML = "<p>Načítavam...</p>";
 
-    reloadBtn.addEventListener("click", load);
-    clearBtn.addEventListener("click", ()=>{
-      fDate.value = ""; fSport.value = ""; load();
-    });
+      const querySnapshot = await getDocs(collection(db, "rezervacie"));
+      container.innerHTML = "";
 
-    async function load(){
-      tbody.innerHTML = "<tr><td colspan='8'>Načítavam…</td></tr>";
-      let qRef = collection(db, "rezervacie");
-      const filters = [];
-      if (fDate.value) filters.push(where("date","==", fDate.value));
-      if (fSport.value) filters.push(where("sport","==", fSport.value));
-      if (filters.length){
-        qRef = query(qRef, ...filters, orderBy("date","asc"));
-      } else {
-        qRef = query(qRef, orderBy("date","asc"));
-      }
-      const snap = await getDocs(qRef);
-      tbody.innerHTML = "";
-      if (snap.empty){ tbody.innerHTML = "<tr><td colspan='8'>Žiadne rezervácie</td></tr>"; return; }
+      querySnapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        const date = docSnap.id;
+        const reservations = data.reservations || [];
 
-      snap.forEach(docSnap=>{
-        const d = docSnap.data();
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${d.date}</td>
-          <td>${d.sport}</td>
-          <td>${d.name}</td>
-          <td>${d.phone}</td>
-          <td>${d.email}</td>
-          <td>${d.note || ""}</td>
-          <td>${(d.slots||[]).join(", ")}</td>
-          <td><button class="danger" data-id="${docSnap.id}">Zmazať</button></td>
+        if (reservations.length === 0) return;
+
+        const h2 = document.createElement("h2");
+        h2.textContent = "📅 " + date;
+        container.appendChild(h2);
+
+        const table = document.createElement("table");
+        table.innerHTML = `
+          <tr>
+            <th>Meno</th>
+            <th>Tel</th>
+            <th>Email</th>
+            <th>Šport</th>
+            <th>Hodiny</th>
+            <th>Poznámka</th>
+            <th>Akcia</th>
+          </tr>
         `;
-        tbody.appendChild(tr);
-      });
 
-      // bind delete
-      tbody.querySelectorAll("button[data-id]").forEach(btn=>{
-        btn.addEventListener("click", ()=> removeReservation(btn.dataset.id));
-      });
-    }
-
-    async function removeReservation(resId){
-      if (!confirm("Naozaj zmazať rezerváciu a uvoľniť časy?")) return;
-      // potrebujeme načítať rezerváciu pre dáta
-      const listSnap = await getDocs(query(collection(db,"rezervacie"), where("__name__","==",resId)));
-      if (listSnap.empty) return;
-      const resDoc = listSnap.docs[0];
-      const d = resDoc.data();
-      const kalKey = `${d.date}_${d.sport}`;
-      const kalRef = doc(db, "kalendar", kalKey);
-
-      try{
-        await runTransaction(db, async (tx)=>{
-          // uvoľni sloty
-          tx.update(kalRef, { reservedTimes: arrayRemove(...(d.slots||[])) });
-          // zmaž rezerváciu
-          tx.delete(resDoc.ref);
+        reservations.forEach((res, idx) => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${res.name}</td>
+            <td>${res.phone}</td>
+            <td>${res.email}</td>
+            <td>${res.sport}</td>
+            <td>${res.slots.join(", ")}</td>
+            <td>${res.note || ""}</td>
+            <td><button data-date="${date}" data-index="${idx}">❌ Zrušiť</button></td>
+          `;
+          table.appendChild(row);
         });
-      } catch(e){
-        // ak kalendar dokument ešte neexistuje (okrajovo), skús aspoň zmazať rezerváciu
-        await deleteDoc(resDoc.ref);
-      }
-      await load();
+
+        container.appendChild(table);
+      });
+
+      // Event na mazanie
+      document.querySelectorAll("button[data-date]").forEach(btn => {
+        btn.addEventListener("click", async () => {
+          const date = btn.dataset.date;
+          const index = btn.dataset.index;
+
+          if (!confirm("Naozaj chcete zrušiť túto rezerváciu?")) return;
+
+          const docRef = doc(db, "rezervacie", date);
+          const docSnap = await getDocs(collection(db, "rezervacie"));
+          let targetDoc;
+          docSnap.forEach(d => { if (d.id === date) targetDoc = d; });
+
+          if (!targetDoc) return;
+
+          let reservations = targetDoc.data().reservations || [];
+          let bookedSlots = targetDoc.data().bookedSlots || [];
+
+          // Odoberieme vymazané hodiny
+          const removed = reservations[index].slots;
+          reservations.splice(index, 1);
+          bookedSlots = bookedSlots.filter(slot => !removed.includes(slot));
+
+          await updateDoc(doc(db, "rezervacie", date), {
+            reservations,
+            bookedSlots
+          });
+
+          alert("Rezervácia zrušená.");
+          loadReservations();
+        });
+      });
     }
 
-    load();
+    document.addEventListener("DOMContentLoaded", loadReservations);
   </script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #fff;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 { text-align: center; }
+    h2 { margin-top: 20px; color: #0ff; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+    th, td {
+      border: 1px solid #444;
+      padding: 8px;
+      text-align: center;
+    }
+    th { background: #222; }
+    td { background: #333; }
+    button {
+      padding: 6px 10px;
+      background: red;
+      border: none;
+      border-radius: 6px;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover { background: darkred; }
+  </style>
+</head>
+<body>
+  <h1>📋 Admin - Rezervácie</h1>
+  <div id="reservations"></div>
 </body>
 </html>
