@@ -4,11 +4,136 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin - Rezervácie</title>
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-    import { getFirestore, collection, getDocs, doc, updateDoc } 
-      from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #fff;
+      margin: 0;
+      padding: 0;
+    }
+
+    h1 {
+      text-align: center;
+      padding: 20px;
+      background: #000;
+      margin: 0;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: auto;
+      padding: 20px;
+    }
+
+    .filters {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    @media(min-width: 600px) {
+      .filters {
+        flex-direction: row;
+        justify-content: space-between;
+      }
+    }
+
+    input, select {
+      padding: 10px;
+      border-radius: 8px;
+      border: none;
+      background: #222;
+      color: #fff;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+
+    th, td {
+      padding: 12px;
+      border-bottom: 1px solid #333;
+      text-align: left;
+    }
+
+    th {
+      background: #222;
+    }
+
+    tr:hover {
+      background: #1e1e1e;
+    }
+
+    .delete-btn {
+      background: red;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      color: #fff;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .no-data {
+      text-align: center;
+      padding: 20px;
+      color: #aaa;
+    }
+  </style>
+</head>
+<body>
+  <h1>📋 Admin - Rezervácie</h1>
+  <div class="container">
+
+    <!-- Filtre -->
+    <div class="filters">
+      <div>
+        <label for="filterDate">Dátum</label><br>
+        <input type="date" id="filterDate">
+      </div>
+      <div>
+        <label for="filterSport">Typ lekcie</label><br>
+        <select id="filterSport">
+          <option value="">Všetko</option>
+          <option value="lyze">Lyže</option>
+          <option value="snb">Snowboard</option>
+        </select>
+      </div>
+      <div>
+        <button onclick="loadReservations()">🔄 Obnoviť</button>
+      </div>
+    </div>
+
+    <!-- Tabuľka rezervácií -->
+    <table>
+      <thead>
+        <tr>
+          <th>Dátum</th>
+          <th>Šport</th>
+          <th>Meno</th>
+          <th>Telefón</th>
+          <th>Email</th>
+          <th>Hodiny</th>
+          <th>Poznámka</th>
+          <th>Akcia</th>
+        </tr>
+      </thead>
+      <tbody id="reservationTable"></tbody>
+    </table>
+
+    <div id="noData" class="no-data" style="display:none;">Žiadne rezervácie</div>
+  </div>
+
+  <script>
     // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyCf1STUPCcqzuTefIgo2Rca49vpNJY4",
@@ -20,128 +145,65 @@
       measurementId: "G-KRT4ECRERK"
     };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
 
+    const reservationTable = document.getElementById("reservationTable");
+    const noDataDiv = document.getElementById("noData");
+
+    // načítanie rezervácií
     async function loadReservations() {
-      const container = document.getElementById("reservations");
-      container.innerHTML = "<p>Načítavam...</p>";
+      reservationTable.innerHTML = "";
+      noDataDiv.style.display = "none";
 
-      const querySnapshot = await getDocs(collection(db, "rezervacie"));
-      container.innerHTML = "";
+      let query = db.collection("rezervacie");
 
-      querySnapshot.forEach(docSnap => {
-        const data = docSnap.data();
-        const date = docSnap.id;
-        const reservations = data.reservations || [];
+      const filterDate = document.getElementById("filterDate").value;
+      const filterSport = document.getElementById("filterSport").value;
 
-        if (reservations.length === 0) return;
+      if (filterDate) {
+        query = query.where("date", "==", filterDate);
+      }
+      if (filterSport) {
+        query = query.where("sport", "==", filterSport);
+      }
 
-        const h2 = document.createElement("h2");
-        h2.textContent = "📅 " + date;
-        container.appendChild(h2);
+      const snapshot = await query.orderBy("date").get();
 
-        const table = document.createElement("table");
-        table.innerHTML = `
-          <tr>
-            <th>Meno</th>
-            <th>Tel</th>
-            <th>Email</th>
-            <th>Šport</th>
-            <th>Hodiny</th>
-            <th>Poznámka</th>
-            <th>Akcia</th>
-          </tr>
+      if (snapshot.empty) {
+        noDataDiv.style.display = "block";
+        return;
+      }
+
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const tr = document.createElement("tr");
+
+        tr.innerHTML = `
+          <td>${data.date}</td>
+          <td>${data.sport}</td>
+          <td>${data.name}</td>
+          <td>${data.phone}</td>
+          <td>${data.email}</td>
+          <td>${(data.slots || []).join(", ")}</td>
+          <td>${data.note || ""}</td>
+          <td><button class="delete-btn" onclick="deleteReservation('${doc.id}')">Vymazať</button></td>
         `;
 
-        reservations.forEach((res, idx) => {
-          const row = document.createElement("tr");
-          row.innerHTML = `
-            <td>${res.name}</td>
-            <td>${res.phone}</td>
-            <td>${res.email}</td>
-            <td>${res.sport}</td>
-            <td>${res.slots.join(", ")}</td>
-            <td>${res.note || ""}</td>
-            <td><button data-date="${date}" data-index="${idx}">❌ Zrušiť</button></td>
-          `;
-          table.appendChild(row);
-        });
-
-        container.appendChild(table);
-      });
-
-      // Event na mazanie
-      document.querySelectorAll("button[data-date]").forEach(btn => {
-        btn.addEventListener("click", async () => {
-          const date = btn.dataset.date;
-          const index = btn.dataset.index;
-
-          if (!confirm("Naozaj chcete zrušiť túto rezerváciu?")) return;
-
-          const docRef = doc(db, "rezervacie", date);
-          const docSnap = await getDocs(collection(db, "rezervacie"));
-          let targetDoc;
-          docSnap.forEach(d => { if (d.id === date) targetDoc = d; });
-
-          if (!targetDoc) return;
-
-          let reservations = targetDoc.data().reservations || [];
-          let bookedSlots = targetDoc.data().bookedSlots || [];
-
-          // Odoberieme vymazané hodiny
-          const removed = reservations[index].slots;
-          reservations.splice(index, 1);
-          bookedSlots = bookedSlots.filter(slot => !removed.includes(slot));
-
-          await updateDoc(doc(db, "rezervacie", date), {
-            reservations,
-            bookedSlots
-          });
-
-          alert("Rezervácia zrušená.");
-          loadReservations();
-        });
+        reservationTable.appendChild(tr);
       });
     }
 
-    document.addEventListener("DOMContentLoaded", loadReservations);
+    // vymazanie rezervácie
+    async function deleteReservation(id) {
+      if (confirm("Naozaj chcete vymazať túto rezerváciu?")) {
+        await db.collection("rezervacie").doc(id).delete();
+        loadReservations();
+      }
+    }
+
+    // načítať po otvorení
+    window.onload = loadReservations;
   </script>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #111;
-      color: #fff;
-      margin: 0;
-      padding: 20px;
-    }
-    h1 { text-align: center; }
-    h2 { margin-top: 20px; color: #0ff; }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 20px;
-    }
-    th, td {
-      border: 1px solid #444;
-      padding: 8px;
-      text-align: center;
-    }
-    th { background: #222; }
-    td { background: #333; }
-    button {
-      padding: 6px 10px;
-      background: red;
-      border: none;
-      border-radius: 6px;
-      color: white;
-      cursor: pointer;
-    }
-    button:hover { background: darkred; }
-  </style>
-</head>
-<body>
-  <h1>📋 Admin - Rezervácie</h1>
-  <div id="reservations"></div>
 </body>
 </html>
