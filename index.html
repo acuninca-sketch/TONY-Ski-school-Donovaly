@@ -1,210 +1,297 @@
 <!DOCTYPE html>
 <html lang="sk">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lyžiarska škola - Rezervácie</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lyžiarska škola – Rezervácie</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background-color: #000;
-      color: #fff;
-      margin: 0;
-      padding: 20px;
+    :root{
+      --bg:#000; --fg:#fff; --card:#111; --border:#333;
+      --free:#1a7f37; --reserved:#a00000; --selected:#ffd700; --primary:#008cba; --primaryH:#006f94;
     }
-    h1 {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-    label {
-      display: block;
-      margin: 10px 0 5px;
-    }
-    input, select, button {
-      width: 100%;
-      padding: 10px;
-      margin-bottom: 15px;
-      border-radius: 8px;
-      border: 1px solid #555;
-      background: #111;
-      color: #fff;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-bottom: 20px;
-    }
-    th, td {
-      padding: 12px;
-      text-align: center;
-      border: 1px solid #333;
-    }
-    td.free {
-      background-color: #1a4d1a;
-      cursor: pointer;
-    }
-    td.free:hover {
-      background-color: #2d7a2d;
-    }
-    td.booked {
-      background-color: #7a1a1a;
-      cursor: not-allowed;
-    }
-    button {
-      background: #007bff;
-      border: none;
-      cursor: pointer;
-    }
-    button:hover {
-      background: #0056b3;
-    }
-    footer {
-      margin-top: 40px;
-      text-align: center;
-      font-size: 12px;
-      color: gray;
-    }
-    footer a {
-      color: gray;
-      text-decoration: none;
-      margin-left: 15px;
-    }
+    *{box-sizing:border-box}
+    body{margin:0;background:var(--bg);color:var(--fg);font-family:system-ui, Arial, sans-serif}
+    .wrap{max-width:520px;margin:0 auto;padding:16px}
+    h1{margin:8px 0 12px;text-align:center;font-size:24px}
+    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px}
+    label{font-size:14px;opacity:.9}
+    input,select,textarea,button{width:100%;padding:12px;border-radius:12px;border:1px solid var(--border);background:#111;color:#fff;font-size:16px}
+    select, input[type="date"]{background:#151515}
+    button.primary{background:var(--primary);border:none}
+    button.primary:hover{background:var(--primaryH)}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .legend{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:12px;margin:8px 0 0}
+    .dot{width:14px;height:14px;border-radius:6px;display:inline-block;border:1px solid #0003}
+    .dot.free{background:var(--free)} .dot.sel{background:var(--selected)} .dot.res{background:var(--reserved)}
+    .slots{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+    .slot{padding:12px;border:none;border-radius:12px;text-align:center;font-weight:600}
+    .slot.free{background:var(--free);color:#fff}
+    .slot.reserved{background:var(--reserved);color:#fff;opacity:.9}
+    .slot.selected{background:var(--selected);color:#000}
+    .slot.reserved:disabled{cursor:not-allowed}
+    .section{margin-top:14px}
+    .footer{margin:24px 0 12px;text-align:center;color:#9aa}
+    .footer a{color:#9aa;text-decoration:none;margin:0 8px}
+    /* Cenník modal */
+    .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:50;justify-content:center;align-items:center;padding:16px}
+    .modal .content{background:var(--card);border:1px solid var(--border);border-radius:16px;max-width:420px;width:100%;padding:16px;position:relative}
+    .modal h3{margin:0 0 8px}
+    .closeX{position:absolute;right:12px;top:10px;background:transparent;border:none;color:#fff;font-size:20px}
+    .summary{margin-top:12px}
   </style>
 </head>
 <body>
-  <h1>Rezervácia lekcie</h1>
+  <div class="wrap">
+    <h1>Rezervácia lekcie</h1>
 
-  <!-- Výber dátumu -->
-  <label for="date">Vyber dátum:</label>
-  <input type="date" id="date">
+    <div class="card section">
+      <div class="row">
+        <div>
+          <label for="date">Dátum</label>
+          <input id="date" type="date" />
+        </div>
+        <div>
+          <label for="sport">Typ lekcie</label>
+          <select id="sport">
+            <option value="lyze">Lyže</option>
+            <option value="snb">Snowboard</option>
+          </select>
+        </div>
+      </div>
 
-  <!-- Výber športu -->
-  <label for="sport">Vyber typ lekcie:</label>
-  <select id="sport">
-    <option value="lyze">Lyže</option>
-    <option value="snb">Snowboard</option>
-  </select>
+      <div class="legend">
+        <span><i class="dot free"></i> Voľné</span>
+        <span><i class="dot sel"></i> Vybraté</span>
+        <span><i class="dot res"></i> Zarezervované</span>
+      </div>
 
-  <!-- Tabuľka s časmi -->
-  <table id="timetable">
-    <thead>
-      <tr>
-        <th>Čas</th>
-        <th>Stav</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
+      <div id="slots" class="slots" aria-live="polite"></div>
 
-  <!-- Rezervačný formulár -->
-  <form id="reservationForm">
-    <label for="name">Meno:</label>
-    <input type="text" id="name" required>
+      <div class="row section">
+        <button id="openPrice" class="primary" type="button">📋 Cenník</button>
+        <button id="clearSel" type="button">Vymazať výber</button>
+      </div>
+    </div>
 
-    <label for="phone">Telefón:</label>
-    <input type="tel" id="phone" required>
+    <form id="reserveForm" class="card section">
+      <h3 style="margin-top:0">Rezervačný formulár</h3>
+      <label for="name">Meno a priezvisko</label>
+      <input id="name" required />
 
-    <label for="email">Email:</label>
-    <input type="email" id="email" required>
+      <label for="phone">Telefón</label>
+      <input id="phone" type="tel" required />
 
-    <label for="note">Poznámka:</label>
-    <input type="text" id="note">
+      <label for="email">Email</label>
+      <input id="email" type="email" required />
 
-    <button type="submit">Rezervovať</button>
-  </form>
+      <label for="note">Poznámka</label>
+      <textarea id="note" rows="2" placeholder="Dobrovoľné"></textarea>
 
-  <!-- Pätička s nenápadným admin odkazom -->
-  <footer>
-    © 2025 Lyžiarska škola  
-    <a href="cennik-admin.html">Admin</a>
-  </footer>
+      <button class="primary" type="submit">Rezervovať vybraté hodiny</button>
+      <div id="summary" class="summary"></div>
+    </form>
 
-  <script>
-    const timetable = document.querySelector("#timetable tbody");
-    const form = document.getElementById("reservationForm");
-    const dateInput = document.getElementById("date");
+    <div class="footer">
+      © 2025 Lyžiarska škola
+      <a href="admin.html" aria-label="Admin rezervácií">Admin</a> •
+      <a href="cennik-admin.html" aria-label="Admin cenníka">Cenník-Admin</a>
+    </div>
+  </div>
+
+  <!-- Modal Cenník -->
+  <div id="priceModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="priceTitle">
+    <div class="content">
+      <button class="closeX" id="closePrice" aria-label="Zavrieť">✕</button>
+      <h3 id="priceTitle">Cenník</h3>
+      <div id="priceContent">Načítavam…</div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      getFirestore, doc, getDoc, runTransaction,
+      collection, addDoc, serverTimestamp,
+      arrayUnion
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    // TODO: vlož sem svoj Firebase config (presne ako ti ho dá konzola)
+    const firebaseConfig = {
+      apiKey: "AIzaSyCf1STUPCcqzuTefIgo2Rca49vpNJY4",
+      authDomain: "lyziarska-skola.firebaseapp.com",
+      projectId: "lyziarska-skola",
+      storageBucket: "lyziarska-skola.appspot.com",
+      messagingSenderId: "59575233692",
+      appId: "1:59575233692:web:c84584d064fc8a79db59",
+      measurementId: "G-KRT4ECRERK"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
     // Časové sloty
-    const slots = [
-      "09:00 - 09:55",
-      "10:00 - 10:55",
-      "11:00 - 11:55",
-      "12:00 - 12:55",
-      "13:30 - 14:25",
-      "14:30 - 15:25",
-      "15:30 - 16:25",
-      "16:30 - 17:25",
-      "17:30 - 18:25",
-      "18:30 - 19:25"
+    const SLOTS = [
+      "09:00 - 09:55","10:00 - 10:55","11:00 - 11:55","12:00 - 12:55",
+      "13:30 - 14:25","14:30 - 15:25","15:30 - 16:25","16:30 - 17:25",
+      "17:30 - 18:25","18:30 - 19:25"
     ];
 
-    let selectedSlots = [];
+    const dateEl = document.getElementById("date");
+    const sportEl = document.getElementById("sport");
+    const slotsEl = document.getElementById("slots");
+    const clearSelBtn = document.getElementById("clearSel");
+    const form = document.getElementById("reserveForm");
+    const summaryEl = document.getElementById("summary");
 
-    // Načítať tabuľku s voľnými slotmi
-    function loadTimetable() {
-      timetable.innerHTML = "";
-      selectedSlots = [];
+    // Modal Cenník
+    const priceModal = document.getElementById("priceModal");
+    const openPrice = document.getElementById("openPrice");
+    const closePrice = document.getElementById("closePrice");
+    const priceContent = document.getElementById("priceContent");
 
-      slots.forEach(time => {
-        const tr = document.createElement("tr");
-        const tdTime = document.createElement("td");
-        tdTime.textContent = time;
+    let selected = new Set();
+    let reservedToday = new Set();
+    let currentKey = ""; // date_sport
 
-        const tdStatus = document.createElement("td");
-        tdStatus.textContent = "Voľné";
-        tdStatus.classList.add("free");
+    const today = new Date().toISOString().slice(0,10);
+    dateEl.value = today;
 
-        tdStatus.addEventListener("click", () => {
-          if (tdStatus.classList.contains("booked")) return;
-          if (tdStatus.classList.contains("selected")) {
-            tdStatus.classList.remove("selected");
-            tdStatus.style.backgroundColor = "#1a4d1a";
-            selectedSlots = selectedSlots.filter(s => s !== time);
-          } else {
-            tdStatus.classList.add("selected");
-            tdStatus.style.backgroundColor = "#2d7a2d";
-            selectedSlots.push(time);
-          }
-        });
+    function keyFor(date, sport){ return `${date}_${sport}`; }
+    function btn(label, cls){ const b=document.createElement("button"); b.type="button"; b.textContent=label; b.className=`slot ${cls}`; return b; }
 
-        tr.appendChild(tdTime);
-        tr.appendChild(tdStatus);
-        timetable.appendChild(tr);
+    async function loadSlots(){
+      selected.clear();
+      slotsEl.innerHTML = "";
+      summaryEl.innerHTML = "";
+      const date = dateEl.value;
+      const sport = sportEl.value;
+      currentKey = keyFor(date, sport);
+      reservedToday = new Set();
+
+      // načítaj rezervované times pre daný deň/šport
+      const kalRef = doc(db, "kalendar", currentKey);
+      const snap = await getDoc(kalRef);
+      const reservedArr = snap.exists() ? (snap.data().reservedTimes || []) : [];
+      reservedArr.forEach(t => reservedToday.add(t));
+
+      // vykresli sloty
+      SLOTS.forEach(time => {
+        const isReserved = reservedToday.has(time);
+        const b = isReserved ? btn(time, "reserved") : btn(time, "free");
+        if (isReserved) {
+          b.disabled = true;
+          b.setAttribute("aria-disabled","true");
+          b.title = "Zarezervované";
+        } else {
+          b.addEventListener("click", () => {
+            if (selected.has(time)) {
+              selected.delete(time);
+              b.classList.remove("selected");
+              b.classList.add("free");
+            } else {
+              selected.add(time);
+              b.classList.remove("free");
+              b.classList.add("selected");
+            }
+          });
+        }
+        slotsEl.appendChild(b);
       });
     }
 
-    // Pri načítaní nastav dnešný dátum
-    window.addEventListener("DOMContentLoaded", () => {
-      const today = new Date().toISOString().split("T")[0];
-      dateInput.value = today;
-      loadTimetable();
-    });
+    function ensureAtLeastOne(){
+      if (selected.size===0){ alert("Vyber aspoň jednu hodinu."); return false; }
+      return true;
+    }
 
-    // Rezervácia
-    form.addEventListener("submit", (e) => {
+    clearSelBtn.addEventListener("click", ()=>{ selected.clear(); loadSlots(); });
+
+    dateEl.addEventListener("change", loadSlots);
+    sportEl.addEventListener("change", loadSlots);
+
+    // Rezervácia s bezpečným uložením slotov (transakcia)
+    form.addEventListener("submit", async (e)=>{
       e.preventDefault();
+      if (!ensureAtLeastOne()) return;
 
-      if (selectedSlots.length === 0) {
-        alert("Prosím vyber aspoň jednu hodinu.");
-        return;
-      }
-
-      const data = {
-        date: dateInput.value,
-        sport: document.getElementById("sport").value,
-        name: document.getElementById("name").value,
-        phone: document.getElementById("phone").value,
-        email: document.getElementById("email").value,
-        note: document.getElementById("note").value,
-        slots: selectedSlots
+      const payload = {
+        date: dateEl.value,
+        sport: sportEl.value,
+        name: document.getElementById("name").value.trim(),
+        phone: document.getElementById("phone").value.trim(),
+        email: document.getElementById("email").value.trim(),
+        note: document.getElementById("note").value.trim(),
+        slots: Array.from(selected),
+        createdAt: serverTimestamp()
       };
 
-      console.log("Rezervácia:", data);
-      alert("Rezervácia bola odoslaná! (dáta zatiaľ iba v konzole)");
+      const kalRef = doc(db, "kalendar", currentKey);
 
-      form.reset();
-      loadTimetable();
+      try {
+        await runTransaction(db, async (tx)=>{
+          const snap = await tx.get(kalRef);
+          const already = snap.exists() ? (snap.data().reservedTimes || []) : [];
+          // konflikt?
+          const conflicts = payload.slots.filter(s => already.includes(s));
+          if (conflicts.length){
+            throw new Error("Niektoré vybrané časy už medzitým niekto obsadil: " + conflicts.join(", "));
+          }
+          // zapíš rezerváciu slotov
+          if (snap.exists()){
+            tx.update(kalRef, { reservedTimes: arrayUnion(...payload.slots) });
+          } else {
+            tx.set(kalRef, { reservedTimes: arrayUnion(...payload.slots) }, { merge: true });
+          }
+        });
+
+        // až po úspešnej transakcii ulož detail rezervácie
+        await addDoc(collection(db, "rezervacie"), payload);
+
+        summaryEl.innerHTML =
+          `<div class="card" style="margin-top:10px">
+            <strong>✅ Rezervácia úspešná</strong><br/>
+            Dátum: ${payload.date}<br/>
+            Typ: ${payload.sport === "lyze" ? "Lyže" : "Snowboard"}<br/>
+            Hodiny: ${payload.slots.join(", ")}
+          </div>`;
+
+        form.reset();
+        selected.clear();
+        await loadSlots();
+      } catch (err){
+        alert(err.message || "Rezerváciu sa nepodarilo dokončiť.");
+        await loadSlots();
+      }
     });
+
+    // CENNÍK – načítanie z Firestore (cennik/default)
+    async function loadPrice(){
+      priceContent.textContent = "Načítavam…";
+      const ref = doc(db, "cennik", "default");
+      const snap = await getDoc(ref);
+      if (!snap.exists()){
+        priceContent.innerHTML = "<p>⚠️ Cenník zatiaľ nie je nastavený.</p>";
+        return;
+      }
+      const c = snap.data();
+      priceContent.innerHTML = `
+        <div class="card">
+          <p><strong>1 hodina individuálna:</strong> ${c.hodina_individualna || "-"}</p>
+          <p><strong>2 osoby spolu:</strong> ${c.dve_osoby || "-"}</p>
+          <p><strong>Skupina (3–6 osôb):</strong> ${c.skupina || "-"}</p>
+          <p><strong>Deti do 6 rokov:</strong> ${c.deti || "-"}</p>
+        </div>`;
+    }
+
+    openPrice.addEventListener("click", async ()=>{
+      await loadPrice();
+      priceModal.style.display = "flex";
+    });
+    closePrice.addEventListener("click", ()=> priceModal.style.display="none");
+    priceModal.addEventListener("click", (e)=>{ if (e.target===priceModal) priceModal.style.display="none"; });
+
+    // init
+    loadSlots();
   </script>
 </body>
 </html>
