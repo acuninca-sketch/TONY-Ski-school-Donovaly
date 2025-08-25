@@ -1,200 +1,210 @@
 <!DOCTYPE html>
 <html lang="sk">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Rezervácia lyžiarskej školy</title>
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyCf1STUPCcqzuTefIgo2Rca49vpNJY4",
-      authDomain: "lyziarska-skola.firebaseapp.com",
-      projectId: "lyziarska-skola",
-      storageBucket: "lyziarska-skola.appspot.com",
-      messagingSenderId: "59575233692",
-      appId: "1:59575233692:web:c84584d064fc8a79db59",
-      measurementId: "G-KRT4ECRERK"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    const availableTimes = ["09:00", "10:00", "11:00", "12:00", "13:00", "14:00", "15:00"];
-
-    let selectedTimes = [];
-    let selectedDate = "";
-
-    async function loadTimes(date) {
-      selectedDate = date;
-      selectedTimes = [];
-      const container = document.getElementById("times");
-      container.innerHTML = "";
-
-      const docSnap = await getDoc(doc(db, "rezervacie", date));
-      const reserved = docSnap.exists() ? (docSnap.data().times || []) : [];
-
-      availableTimes.forEach(time => {
-        const btn = document.createElement("button");
-        btn.innerText = time;
-
-        if (reserved.includes(time)) {
-          btn.className = "time reserved";
-          btn.disabled = true;
-        } else {
-          btn.className = "time free";
-          btn.onclick = () => toggleTime(time, btn);
-        }
-
-        container.appendChild(btn);
-      });
-    }
-
-    function toggleTime(time, btn) {
-      if (selectedTimes.includes(time)) {
-        selectedTimes = selectedTimes.filter(t => t !== time);
-        btn.classList.remove("selected");
-      } else {
-        selectedTimes.push(time);
-        btn.classList.add("selected");
-      }
-    }
-
-    document.addEventListener("DOMContentLoaded", () => {
-      const dateInput = document.getElementById("date");
-      const today = new Date().toISOString().split("T")[0];
-      dateInput.value = today;
-      loadTimes(today);
-
-      dateInput.addEventListener("change", e => loadTimes(e.target.value));
-
-      document.getElementById("reserveForm").addEventListener("submit", async e => {
-        e.preventDefault();
-        const name = document.getElementById("name").value;
-        const phone = document.getElementById("phone").value;
-        const email = document.getElementById("email").value;
-        const note = document.getElementById("note").value;
-
-        if (selectedTimes.length === 0) {
-          alert("Vyber aspoň jednu hodinu!");
-          return;
-        }
-
-        const docRef = doc(db, "rezervacie", selectedDate);
-        const docSnap = await getDoc(docRef);
-        let data = { times: [], rezervacie: [] };
-
-        if (docSnap.exists()) {
-          data = docSnap.data();
-        }
-
-        // uložíme rezerváciu
-        data.times = [...new Set([...data.times, ...selectedTimes])];
-        data.rezervacie.push({ name, phone, email, note, selected: selectedTimes });
-
-        await setDoc(docRef, data);
-
-        alert("Rezervácia úspešná!");
-        loadTimes(selectedDate);
-        e.target.reset();
-      });
-    });
-  </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lyžiarska škola - Rezervácie</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #000;
+      background-color: #000;
       color: #fff;
       margin: 0;
-      padding: 0;
-    }
-    .container {
-      max-width: 480px;
-      margin: auto;
       padding: 20px;
     }
-    h2 {
+    h1 {
       text-align: center;
       margin-bottom: 20px;
     }
-    #times {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      justify-content: center;
+    label {
+      display: block;
+      margin: 10px 0 5px;
+    }
+    input, select, button {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 15px;
+      border-radius: 8px;
+      border: 1px solid #555;
+      background: #111;
+      color: #fff;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
       margin-bottom: 20px;
     }
-    .time {
-      padding: 10px 15px;
-      border-radius: 12px;
-      border: none;
-      cursor: pointer;
-      flex: 1 0 30%;
-      font-size: 16px;
-    }
-    .time.free { background: #1a7f37; color: #fff; }
-    .time.reserved { background: #a00; color: #fff; cursor: not-allowed; }
-    .time.selected { background: #ffd700; color: #000; }
-    form {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      background: #111;
-      padding: 15px;
-      border-radius: 12px;
-    }
-    input, textarea {
+    th, td {
       padding: 12px;
-      border-radius: 8px;
-      border: 1px solid #444;
-      background: #222;
-      color: #fff;
-      font-size: 16px;
-      width: 100%;
+      text-align: center;
+      border: 1px solid #333;
     }
-    button[type="submit"] {
-      background: #008cba;
-      color: #fff;
-      border: none;
-      padding: 15px;
-      border-radius: 12px;
-      font-size: 18px;
+    td.free {
+      background-color: #1a4d1a;
       cursor: pointer;
     }
-    button[type="submit"]:hover {
-      background: #006f94;
+    td.free:hover {
+      background-color: #2d7a2d;
     }
-    label {
-      font-size: 14px;
-      margin-bottom: -5px;
+    td.booked {
+      background-color: #7a1a1a;
+      cursor: not-allowed;
+    }
+    button {
+      background: #007bff;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    footer {
+      margin-top: 40px;
+      text-align: center;
+      font-size: 12px;
+      color: gray;
+    }
+    footer a {
+      color: gray;
+      text-decoration: none;
+      margin-left: 15px;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h2>Rezervácia lyžiarskej školy</h2>
+  <h1>Rezervácia lekcie</h1>
 
-    <label for="date">Vyber dátum:</label>
-    <input type="date" id="date" />
+  <!-- Výber dátumu -->
+  <label for="date">Vyber dátum:</label>
+  <input type="date" id="date">
 
-    <div id="times"></div>
+  <!-- Výber športu -->
+  <label for="sport">Vyber typ lekcie:</label>
+  <select id="sport">
+    <option value="lyze">Lyže</option>
+    <option value="snb">Snowboard</option>
+  </select>
 
-    <form id="reserveForm">
-      <label for="name">Meno a priezvisko</label>
-      <input type="text" id="name" required />
+  <!-- Tabuľka s časmi -->
+  <table id="timetable">
+    <thead>
+      <tr>
+        <th>Čas</th>
+        <th>Stav</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
 
-      <label for="phone">Telefón</label>
-      <input type="text" id="phone" required />
+  <!-- Rezervačný formulár -->
+  <form id="reservationForm">
+    <label for="name">Meno:</label>
+    <input type="text" id="name" required>
 
-      <label for="email">Email</label>
-      <input type="email" id="email" required />
+    <label for="phone">Telefón:</label>
+    <input type="tel" id="phone" required>
 
-      <label for="note">Poznámka</label>
-      <textarea id="note" rows="3"></textarea>
+    <label for="email">Email:</label>
+    <input type="email" id="email" required>
 
-      <button type="submit">Rezervovať vybrané hodiny</button>
-    </form>
-  </div>
+    <label for="note">Poznámka:</label>
+    <input type="text" id="note">
+
+    <button type="submit">Rezervovať</button>
+  </form>
+
+  <!-- Pätička s nenápadným admin odkazom -->
+  <footer>
+    © 2025 Lyžiarska škola  
+    <a href="cennik-admin.html">Admin</a>
+  </footer>
+
+  <script>
+    const timetable = document.querySelector("#timetable tbody");
+    const form = document.getElementById("reservationForm");
+    const dateInput = document.getElementById("date");
+
+    // Časové sloty
+    const slots = [
+      "09:00 - 09:55",
+      "10:00 - 10:55",
+      "11:00 - 11:55",
+      "12:00 - 12:55",
+      "13:30 - 14:25",
+      "14:30 - 15:25",
+      "15:30 - 16:25",
+      "16:30 - 17:25",
+      "17:30 - 18:25",
+      "18:30 - 19:25"
+    ];
+
+    let selectedSlots = [];
+
+    // Načítať tabuľku s voľnými slotmi
+    function loadTimetable() {
+      timetable.innerHTML = "";
+      selectedSlots = [];
+
+      slots.forEach(time => {
+        const tr = document.createElement("tr");
+        const tdTime = document.createElement("td");
+        tdTime.textContent = time;
+
+        const tdStatus = document.createElement("td");
+        tdStatus.textContent = "Voľné";
+        tdStatus.classList.add("free");
+
+        tdStatus.addEventListener("click", () => {
+          if (tdStatus.classList.contains("booked")) return;
+          if (tdStatus.classList.contains("selected")) {
+            tdStatus.classList.remove("selected");
+            tdStatus.style.backgroundColor = "#1a4d1a";
+            selectedSlots = selectedSlots.filter(s => s !== time);
+          } else {
+            tdStatus.classList.add("selected");
+            tdStatus.style.backgroundColor = "#2d7a2d";
+            selectedSlots.push(time);
+          }
+        });
+
+        tr.appendChild(tdTime);
+        tr.appendChild(tdStatus);
+        timetable.appendChild(tr);
+      });
+    }
+
+    // Pri načítaní nastav dnešný dátum
+    window.addEventListener("DOMContentLoaded", () => {
+      const today = new Date().toISOString().split("T")[0];
+      dateInput.value = today;
+      loadTimetable();
+    });
+
+    // Rezervácia
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+
+      if (selectedSlots.length === 0) {
+        alert("Prosím vyber aspoň jednu hodinu.");
+        return;
+      }
+
+      const data = {
+        date: dateInput.value,
+        sport: document.getElementById("sport").value,
+        name: document.getElementById("name").value,
+        phone: document.getElementById("phone").value,
+        email: document.getElementById("email").value,
+        note: document.getElementById("note").value,
+        slots: selectedSlots
+      };
+
+      console.log("Rezervácia:", data);
+      alert("Rezervácia bola odoslaná! (dáta zatiaľ iba v konzole)");
+
+      form.reset();
+      loadTimetable();
+    });
+  </script>
 </body>
 </html>
