@@ -44,10 +44,9 @@
 
       if (docSnap.exists()) {
         const data = docSnap.data();
-        document.getElementById("hodina_individualna").value = data.hodina_individualna || "";
-        document.getElementById("dve_osoby").value = data.dve_osoby || "";
-        document.getElementById("skupina").value = data.skupina || "";
-        document.getElementById("deti").value = data.deti || "";
+        document.getElementById("1_hodina_individualna").value = data.hodina_individualna || "";
+        document.getElementById("dve_hodiny").value = data.dve_osoby || "";
+        document.getElementById("dalsia_osoba").value = data.skupina || "";
       }
     }
 
@@ -56,10 +55,9 @@
       e.preventDefault();
 
       const data = {
-        hodina_individualna: document.getElementById("hodina_individualna").value,
-        dve_osoby: document.getElementById("dve_osoby").value,
-        skupina: document.getElementById("skupina").value,
-        deti: document.getElementById("deti").value
+        hodina_individualna: document.getElementById("1_hodina_individualna").value,
+        dve_osoby: document.getElementById("dve_hodiny").value,
+        skupina: document.getElementById("dalsia_osoba").value,
       };
 
       await setDoc(doc(db, "cennik", "default"), data);
@@ -140,13 +138,10 @@
     <h2>Admin – Správa cenníka</h2>
     <form id="cennikForm">
       <label for="hodina_individualna">1 hodina individuálna</label>
-      <input type="text" id="hodina_individualna" required />
+      <input type="text" id="1_hodina_individualna" required />
 
-      <label for="dve_osoby">2 hodiny</label>
-      <input type="text" id="dve_osoby" required />
-
-      <label for="skupina">ďalšia odoba</label>
-      <input type="text" id="skupina" required />
+      <label for="dve_hodiny">dve_hodiny</label>
+      <input type="text" id="dve hodiny" required />
       <button type="submit">💾 Uložiť</button>
     </form>
   </div>
