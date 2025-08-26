@@ -144,10 +144,47 @@
       color: #fff;
       font-weight: bold;
       text-decoration: none;
+      cursor: pointer;
     }
 
     .cennik-btn:hover {
       background: #444;
+    }
+
+    /* Popup štýly */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background: rgba(0,0,0,0.8);
+    }
+
+    .modal-content {
+      background: #1a1a1a;
+      margin: 10% auto;
+      padding: 20px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 600px;
+      color: #fff;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+    }
+
+    .close {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .close:hover {
+      color: #fff;
     }
   </style>
 </head>
@@ -196,7 +233,16 @@
       <textarea id="note"></textarea>
 
       <button id="submitReservation">📌 Rezervovať vybraté hodiny</button>
-      <a href="cennik.html" class="cennik-btn">📋 Cenník</a>
+      <div class="cennik-btn" id="openCennik">📋 Cenník</div>
+    </div>
+  </div>
+
+  <!-- Popup Cenník -->
+  <div id="cennikModal" class="modal">
+    <div class="modal-content">
+      <span class="close" id="closeCennik">&times;</span>
+      <h2>📋 Cenník</h2>
+      <div id="cennikContent">Načítavam...</div>
     </div>
   </div>
 
@@ -228,7 +274,6 @@
     const sportSelect = document.getElementById("sport");
     let selectedSlots = [];
 
-    // render slotov
     function renderSlots(bookedSlots=[]) {
       timeGrid.innerHTML = "";
       times.forEach(time => {
@@ -253,13 +298,16 @@
       });
     }
 
-    // načítanie rezervácií
     async function loadReservations() {
       const date = dateInput.value;
       const sport = sportSelect.value;
       if (!date) return;
 
-      const snapshot = await db.collection("rezervacie").where("date", "==", date).where("sport", "==", sport).get();
+      const snapshot = await db.collection("rezervacie")
+        .where("date", "==", date)
+        .where("sport", "==", sport)
+        .get();
+
       let booked = [];
       snapshot.forEach(doc => {
         booked = booked.concat(doc.data().slots || []);
@@ -294,9 +342,33 @@
       loadReservations();
     });
 
-    // default dnešný dátum
+    // Default dnešný dátum
     dateInput.valueAsDate = new Date();
     loadReservations();
+
+    // Popup logika
+    const modal = document.getElementById("cennikModal");
+    const openBtn = document.getElementById("openCennik");
+    const closeBtn = document.getElementById("closeCennik");
+    const cennikContent = document.getElementById("cennikContent");
+
+    openBtn.onclick = async () => {
+      modal.style.display = "block";
+      try {
+        const resp = await fetch("cennik-admin.html");
+        const text = await resp.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(text, "text/html");
+        const publicCennik = doc.getElementById("publicCennik");
+        cennikContent.innerHTML = publicCennik ? publicCennik.innerHTML : "❌ Cenník sa nepodarilo načítať.";
+      } catch (e) {
+        cennikContent.innerHTML = "❌ Chyba pri načítaní cenníka.";
+      }
+    };
+
+    closeBtn.onclick = () => modal.style.display = "none";
+    window.onclick = (e) => { if (e.target == modal) modal.style.display = "none"; };
   </script>
 </body>
 </html>
+
