@@ -74,8 +74,8 @@
     function updatePublicCennik(data) {
       document.getElementById("publicCennik").innerHTML = `
         <p><strong>1 hodina individuálna:</strong> ${data.hodina_individualna || "-"} €</p>
-        <p><strong>2 osoby (1 hodina):</strong> ${data.dve_osoby || "-"} €</p>
-        <p><strong>Skupina (3 a viac):</strong> ${data.skupina || "-"} €</p>
+        <p><strong>2 hodiny:</strong> ${data.dve_osoby || "-"} €</p>
+        <p><strong>Ďalšia osoba:</strong> ${data.skupina || "-"} €</p>
       `;
     }
 
@@ -156,10 +156,10 @@
       <label for="hodina_individualna">1 hodina individuálna (€)</label>
       <input type="text" id="hodina_individualna" required />
 
-      <label for="dve_osoby">2 osoby (€)</label>
+      <label for="dve_osoby">2 hodiny (€)</label>
       <input type="text" id="dve_osoby" required />
 
-      <label for="skupina">Skupina (3+ osôb) (€)</label>
+      <label for="skupina">ďalšia odoba (€)</label>
       <input type="text" id="skupina" required />
 
       <button type="submit">💾 Uložiť</button>
