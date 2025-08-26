@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cenník - Lyžiarska škola</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #fff;
+      margin: 0;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #1c1c1c;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 12px;
+      text-align: center;
+      border-bottom: 1px solid #333;
+    }
+
+    th {
+      background: #0a84ff;
+      color: #fff;
+      font-size: 16px;
+    }
+
+    tr:nth-child(even) {
+      background: #222;
+    }
+
+    tr:hover {
+      background: #333;
+    }
+
+    .note {
+      margin-top: 15px;
+      font-size: 14px;
+      text-align: center;
+      color: #ccc;
+    }
+  </style>
+</head>
+<body>
+  <h1>📋 Cenník</h1>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Dĺžka lekcie</th>
+        <th>Cena za osobu</th>
+        <th>Cena za skupinu</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1 hodina</td>
+        <td>25 €</td>
+        <td>20 € / osoba</td>
+      </tr>
+      <tr>
+        <td>2 hodiny</td>
+        <td>45 €</td>
+        <td>35 € / osoba</td>
+      </tr>
+      <tr>
+        <td>3 hodiny</td>
+        <td>65 €</td>
+        <td>50 € / osoba</td>
+      </tr>
+      <tr>
+        <td>Celodenný kurz</td>
+        <td>120 €</td>
+        <td>90 € / osoba</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p class="note">* V cene nie je zahrnutý lístok na vlek ani výstroj.</p>
+</body>
+</html>
