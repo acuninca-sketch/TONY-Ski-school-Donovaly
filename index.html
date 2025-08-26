@@ -355,7 +355,7 @@
     openBtn.onclick = async () => {
       modal.style.display = "block";
       try {
-        const resp = await fetch("cennik-admin.html");
+        const resp = await fetch("cennik.html");
         const text = await resp.text();
         const parser = new DOMParser();
         const doc = parser.parseFromString(text, "text/html");
