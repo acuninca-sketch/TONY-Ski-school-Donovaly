@@ -1,175 +1,96 @@
 <!DOCTYPE html>
 <html lang="sk">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Admin – Cenník</title>
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-
-    // 🔥 Firebase config
-    const firebaseConfig = {
-      apiKey: "AIzaSyCf1STUPCcqzuTefIgo2Rca49vpNJY4",
-      authDomain: "lyziarska-skola.firebaseapp.com",
-      projectId: "lyziarska-skola",
-      storageBucket: "lyziarska-skola.appspot.com",
-      messagingSenderId: "59575233692",
-      appId: "1:59575233692:web:c84584d064fc8a79db59",
-      measurementId: "G-KRT4ECRERK"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    const ADMIN_PASSWORD = "tajneheslo"; // 🔑 tvoje heslo
-
-    // Prihlásenie
-    function login(e) {
-      e.preventDefault();
-      const entered = document.getElementById("loginPassword").value;
-      if (entered === ADMIN_PASSWORD) {
-        document.getElementById("loginScreen").style.display = "none";
-        document.getElementById("adminContainer").style.display = "block";
-        loadCennik();
-      } else {
-        alert("❌ Nesprávne heslo!");
-      }
-    }
-
-    // Načítanie cenníka
-    async function loadCennik() {
-      const docRef = doc(db, "cennik", "default");
-      const docSnap = await getDoc(docRef);
-
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        document.getElementById("hodina_individualna").value = data.hodina_individualna || "";
-        document.getElementById("dve_osoby").value = data.dve_osoby || "";
-        document.getElementById("skupina").value = data.skupina || "";
-
-        // Aktualizuj verejný cenník
-        updatePublicCennik(data);
-      } else {
-        updatePublicCennik({});
-        document.getElementById("publicCennik").innerHTML = "<p>Načítavam cenník...</p>";
-      }
-    }
-
-    // Uloženie cenníka
-    async function saveCennik(e) {
-      e.preventDefault();
-
-      const data = {
-        hodina_individualna: document.getElementById("hodina_individualna").value,
-        dve_osoby: document.getElementById("dve_osoby").value,
-        skupina: document.getElementById("skupina").value,
-      };
-
-      await setDoc(doc(db, "cennik", "default"), data);
-      updatePublicCennik(data);
-      alert("✅ Cenník bol uložený!");
-    }
-
-    // Verejný cenník
-    function updatePublicCennik(data) {
-      document.getElementById("publicCennik").innerHTML = `
-        <p><strong>1 hodina individuálna:</strong> ${data.hodina_individualna || "-"} €</p>
-        <p><strong>2 hodiny:</strong> ${data.dve_osoby || "-"} €</p>
-        <p><strong>Ďalšia osoba:</strong> ${data.skupina || "-"} €</p>
-      `;
-    }
-
-    window.addEventListener("DOMContentLoaded", () => {
-      document.getElementById("loginForm").addEventListener("submit", login);
-      document.getElementById("cennikForm").addEventListener("submit", saveCennik);
-      loadCennik(); // aby verejný cenník fungoval aj bez prihlásenia
-    });
-  </script>
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cenník - Lyžiarska škola (Admin)</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: #121212;
-      color: white;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
+      background: #111;
+      color: #fff;
       margin: 0;
-      flex-direction: column;
-    }
-    .container {
-      background: #1e1e1e;
       padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #1c1c1c;
       border-radius: 12px;
-      width: 90%;
-      max-width: 400px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-      margin: 10px;
+      overflow: hidden;
     }
-    h2 { text-align: center; margin-bottom: 20px; }
-    label { display: block; margin-top: 10px; }
-    input {
-      width: 100%;
-      padding: 10px;
-      margin-top: 5px;
-      border: none;
-      border-radius: 8px;
-      background: #2c2c2c;
-      color: white;
-    }
-    button {
-      width: 100%;
+
+    th, td {
       padding: 12px;
-      margin-top: 20px;
-      background: #4CAF50;
-      border: none;
-      color: white;
-      font-size: 16px;
-      border-radius: 8px;
-      cursor: pointer;
+      text-align: center;
+      border-bottom: 1px solid #333;
     }
-    button:hover { background: #45a049; }
-    #publicCennik {
-      margin-top: 20px;
+
+    th {
+      background: #0a84ff;
+      color: #fff;
+      font-size: 16px;
+    }
+
+    tr:nth-child(even) {
       background: #222;
-      padding: 15px;
-      border-radius: 10px;
+    }
+
+    tr:hover {
+      background: #333;
+    }
+
+    .note {
+      margin-top: 15px;
+      font-size: 14px;
+      text-align: center;
+      color: #ccc;
     }
   </style>
 </head>
 <body>
-  <!-- Login obrazovka -->
-  <div class="container" id="loginScreen">
-    <h2>🔐 Admin login</h2>
-    <form id="loginForm">
-      <label for="loginPassword">Heslo</label>
-      <input type="password" id="loginPassword" required />
-      <button type="submit">Prihlásiť</button>
-    </form>
-  </div>
+  <h1>📋 Cenník (Admin verzia)</h1>
 
-  <!-- Admin formulár -->
-  <div class="container" id="adminContainer" style="display:none;">
-    <h2>Admin – Správa cenníka</h2>
-    <form id="cennikForm">
-      <label for="hodina_individualna">1 hodina individuálna (€)</label>
-      <input type="text" id="hodina_individualna" required />
-
-      <label for="dve_osoby">2 hodiny (€)</label>
-      <input type="text" id="dve_osoby" required />
-
-      <label for="skupina">ďalšia osoba (€)</label>
-      <input type="text" id="skupina" required />
-
-      <button type="submit">💾 Uložiť</button>
-    </form>
-  </div>
-
-  <!-- Verejný cenník (zobrazuje sa aj neprihláseným) -->
-  <div class="container" id="publicCennik">
-    <p>Načítavam cenník...</p>
+  <!-- Tento blok sa načíta do index.html -->
+  <div id="publicCennik">
+    <table>
+      <thead>
+        <tr>
+          <th>Dĺžka lekcie</th>
+          <th>Cena za osobu</th>
+          <th>Cena za skupinu</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1 hodina</td>
+          <td>25 €</td>
+          <td>20 € / osoba</td>
+        </tr>
+        <tr>
+          <td>2 hodiny</td>
+          <td>45 €</td>
+          <td>35 € / osoba</td>
+        </tr>
+        <tr>
+          <td>3 hodiny</td>
+          <td>65 €</td>
+          <td>50 € / osoba</td>
+        </tr>
+        <tr>
+          <td>Celodenný kurz</td>
+          <td>120 €</td>
+          <td>90 € / osoba</td>
+        </tr>
+      </tbody>
+    </table>
+    <p class="note">* V cene nie je zahrnutý lístok na vlek ani výstroj.</p>
   </div>
 </body>
 </html>
