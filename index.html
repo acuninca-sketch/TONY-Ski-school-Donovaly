@@ -357,10 +357,7 @@
       try {
         const resp = await fetch("cennik.html");
         const text = await resp.text();
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(text, "text/html");
-        const publicCennik = doc.getElementById("publicCennik");
-        cennikContent.innerHTML = publicCennik ? publicCennik.innerHTML : "❌ Cenník sa nepodarilo načítať.";
+        cennikContent.innerHTML = text;
       } catch (e) {
         cennikContent.innerHTML = "❌ Chyba pri načítaní cenníka.";
       }
@@ -371,4 +368,5 @@
   </script>
 </body>
 </html>
+
 
