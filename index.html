@@ -1,254 +1,16 @@
 <!DOCTYPE html>
 <html lang="sk">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Rezervácia lekcie - Lyžiarska škola</title>
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #000;
-      color: #fff;
-      margin: 0;
-      padding: 0;
-    }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TONY Ski school Donovaly</title>
 
-    h1 {
-      text-align: center;
-      padding: 20px;
-    }
+  <!-- Firebase -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
-    .container {
-      padding: 15px;
-      max-width: 900px;
-      margin: auto;
-    }
-
-    .filters {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-bottom: 15px;
-    }
-
-    @media(min-width: 600px) {
-      .filters {
-        flex-direction: row;
-        justify-content: space-between;
-      }
-    }
-
-    select, input[type="date"] {
-      padding: 10px;
-      border-radius: 8px;
-      border: none;
-      width: 100%;
-      background: #222;
-      color: #fff;
-    }
-
-    .legend {
-      display: flex;
-      gap: 15px;
-      margin: 10px 0 20px;
-      font-size: 14px;
-    }
-
-    .legend span {
-      display: flex;
-      align-items: center;
-      gap: 5px;
-    }
-
-    .circle {
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      display: inline-block;
-    }
-
-    .free { background: green; }
-    .selected { background: gold; }
-    .booked { background: red; }
-
-    .time-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-
-    .time-slot {
-      padding: 15px;
-      border-radius: 12px;
-      text-align: center;
-      font-weight: bold;
-      cursor: pointer;
-      background: green;
-      color: #fff;
-    }
-
-    .time-slot.selected {
-      background: gold;
-      color: #000;
-    }
-
-    .time-slot.booked {
-      background: red;
-      cursor: not-allowed;
-    }
-
-    .form-container {
-      background: #111;
-      padding: 20px;
-      border-radius: 12px;
-      margin-top: 25px;
-    }
-
-    .form-container h3 {
-      margin-bottom: 10px;
-    }
-
-    label {
-      display: block;
-      margin-top: 10px;
-    }
-
-    input, textarea {
-      width: 100%;
-      padding: 10px;
-      margin-top: 5px;
-      border-radius: 8px;
-      border: none;
-      background: #222;
-      color: #fff;
-    }
-
-    button {
-      margin-top: 20px;
-      width: 100%;
-      padding: 14px;
-      background: #0a84ff;
-      border: none;
-      border-radius: 12px;
-      color: #fff;
-      font-size: 16px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    .cennik-btn {
-      display: block;
-      margin-top: 15px;
-      text-align: center;
-      padding: 12px;
-      background: #333;
-      border-radius: 12px;
-      color: #fff;
-      font-weight: bold;
-      text-decoration: none;
-      cursor: pointer;
-    }
-
-    .cennik-btn:hover {
-      background: #444;
-    }
-
-    /* Popup štýly */
-    .modal {
-      display: none;
-      position: fixed;
-      z-index: 1000;
-      left: 0;
-      top: 0;
-      width: 100%;
-      height: 100%;
-      overflow: auto;
-      background: rgba(0,0,0,0.8);
-    }
-
-    .modal-content {
-      background: #1a1a1a;
-      margin: 10% auto;
-      padding: 20px;
-      border-radius: 12px;
-      width: 90%;
-      max-width: 600px;
-      color: #fff;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-    }
-
-    .close {
-      color: #aaa;
-      float: right;
-      font-size: 28px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    .close:hover {
-      color: #fff;
-    }
-  </style>
-</head>
-<body>
-  <h1>Rezervácia lekcie</h1>
-
-  <div class="container">
-    <!-- Výber dátumu a lekcie -->
-    <div class="filters">
-      <div>
-        <label for="date">Dátum</label>
-        <input type="date" id="date">
-      </div>
-      <div>
-        <label for="sport">Typ lekcie</label>
-        <select id="sport">
-          <option value="lyze">Lyže</option>
-          <option value="snb">Snowboard</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- Legenda -->
-    <div class="legend">
-      <span><span class="circle free"></span> Voľné</span>
-      <span><span class="circle selected"></span> Vybraté</span>
-      <span><span class="circle booked"></span> Zarezervované</span>
-    </div>
-
-    <!-- Výber hodín -->
-    <div class="time-grid" id="timeGrid"></div>
-
-    <!-- Formulár -->
-    <div class="form-container">
-      <h3>Rezervačný formulár</h3>
-      <label>Meno a priezvisko</label>
-      <input type="text" id="name">
-      <label>Telefón</label>
-      <input type="text" id="phone">
-      <label>Email</label>
-      <input type="email" id="email">
-      <label>Poznámka</label>
-      <textarea id="note"></textarea>
-      <button id="submitReservation">📌 Rezervovať vybraté hodiny</button>
-      <div class="cennik-btn" id="openCennik">📋 Cenník</div>
-    </div>
-  </div>
-
-  <!-- Popup Cenník -->
-  <div id="cennikModal" class="modal">
-    <div class="modal-content">
-      <span class="close" id="closeCennik">&times;</span>
-      <h2>📋 Cenník</h2>
-      <div id="cennikContent">Načítavam...</div>
-    </div>
-  </div>
-
-  <script>
-    // Firebase config
+    // 🔥 Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyCf1STUPCcqzuTefIgo2Rca49vpNJY4",
       authDomain: "lyziarska-skola.firebaseapp.com",
@@ -258,124 +20,182 @@
       appId: "1:59575233692:web:c84584d064fc8a79db59",
       measurementId: "G-KRT4ECRERK"
     };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.firestore();
 
-    const times = [
-      "09:00 - 09:55",
-      "10:00 - 10:55",
-      "11:00 - 11:55",
-      "12:00 - 12:55",
-      "13:30 - 14:25",
-      "14:30 - 15:25",
-      "15:30 - 16:25",
-      "16:30 - 17:25",
-      "17:30 - 18:25",
-      "18:30 - 19:25"
-    ];
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-    const timeGrid = document.getElementById("timeGrid");
-    const dateInput = document.getElementById("date");
-    const sportSelect = document.getElementById("sport");
-    let selectedSlots = [];
+    const ADMIN_PASSWORD = "tajneheslo"; // 🔑 zmeň si heslo
 
-    function renderSlots(bookedSlots=[]) {
-      timeGrid.innerHTML = "";
-      times.forEach(time => {
-        const div = document.createElement("div");
-        div.classList.add("time-slot");
-        div.innerText = time;
+    // Otvorenie / zatvorenie modalu
+    window.openCennik = function () {
+      document.getElementById("cennikModal").style.display = "flex";
+      loadCennik();
+    };
+    window.closeCennik = function () {
+      document.getElementById("cennikModal").style.display = "none";
+      document.getElementById("loginForm").reset();
+      document.getElementById("loginSection").style.display = "block";
+      document.getElementById("adminSection").style.display = "none";
+    };
 
-        if (bookedSlots.includes(time)) {
-          div.classList.add("booked");
-        } else {
-          div.addEventListener("click", () => {
-            if (div.classList.contains("selected")) {
-              div.classList.remove("selected");
-              selectedSlots = selectedSlots.filter(t => t !== time);
-            } else {
-              div.classList.add("selected");
-              selectedSlots.push(time);
-            }
-          });
-        }
-        timeGrid.appendChild(div);
-      });
-    }
-
-    async function loadReservations() {
-      const date = dateInput.value;
-      const sport = sportSelect.value;
-      if (!date) return;
-      const snapshot = await db.collection("rezervacie")
-        .where("date", "==", date)
-        .where("sport", "==", sport)
-        .get();
-      let booked = [];
-      snapshot.forEach(doc => {
-        booked = booked.concat(doc.data().slots || []);
-      });
-      renderSlots(booked);
-    }
-
-    dateInput.addEventListener("change", loadReservations);
-    sportSelect.addEventListener("change", loadReservations);
-
-    document.getElementById("submitReservation").addEventListener("click", async () => {
-      const name = document.getElementById("name").value;
-      const phone = document.getElementById("phone").value;
-      const email = document.getElementById("email").value;
-      const note = document.getElementById("note").value;
-      const date = dateInput.value;
-      const sport = sportSelect.value;
-
-      if (!name || !phone || !email || selectedSlots.length === 0) {
-        alert("Vyplňte všetky údaje a vyberte hodiny.");
-        return;
+    // Načítanie cenníka
+    async function loadCennik() {
+      const docRef = doc(db, "cennik", "default");
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        document.getElementById("cennikDisplay").innerHTML = `
+          <p><strong>1 hodina individuálna:</strong> ${data.hodina_individualna || "-"} €</p>
+          <p><strong>2 osoby spolu:</strong> ${data.dve_osoby || "-"} €</p>
+          <p><strong>Skupina (3–6 osôb):</strong> ${data.skupina || "-"} €</p>
+          <p><strong>Deti do 6 rokov:</strong> ${data.deti || "-"} €</p>
+        `;
+        document.getElementById("hodina_individualna").value = data.hodina_individualna || "";
+        document.getElementById("dve_osoby").value = data.dve_osoby || "";
+        document.getElementById("skupina").value = data.skupina || "";
+        document.getElementById("deti").value = data.deti || "";
+      } else {
+        document.getElementById("cennikDisplay").innerHTML = "<p>Načítavam cenník...</p>";
       }
+    }
 
-      await db.collection("rezervacie").add({
-        name, phone, email, note, date, sport,
-        slots: selectedSlots,
-        createdAt: new Date()
-      });
-
-      alert("Rezervácia úspešná!");
-      selectedSlots = [];
-      loadReservations();
-    });
-
-    // Default dnešný dátum
-    dateInput.valueAsDate = new Date();
-    loadReservations();
-
-    // Popup logika
-    const modal = document.getElementById("cennikModal");
-    const openBtn = document.getElementById("openCennik");
-    const closeBtn = document.getElementById("closeCennik");
-    const cennikContent = document.getElementById("cennikContent");
-
-    openBtn.onclick = async () => {
-      modal.style.display = "block";
-      try {
-        const resp = await fetch("cennik-admin.html");
-        const text = await resp.text();
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(text, "text/html");
-        const publicCennik = doc.querySelector("#publicCennik");
-        if (publicCennik) {
-          cennikContent.innerHTML = publicCennik.innerHTML;
-        } else {
-          cennikContent.innerHTML = "❌ Cenník sa nepodarilo načítať.";
-        }
-      } catch (e) {
-        cennikContent.innerHTML = "⚠️ Chyba pri načítaní cenníka.";
+    // Prihlásenie admina
+    window.login = function (e) {
+      e.preventDefault();
+      const entered = document.getElementById("loginPassword").value;
+      if (entered === ADMIN_PASSWORD) {
+        document.getElementById("loginSection").style.display = "none";
+        document.getElementById("adminSection").style.display = "block";
+      } else {
+        alert("❌ Nesprávne heslo!");
       }
     };
 
-    closeBtn.onclick = () => modal.style.display = "none";
-    window.onclick = (e) => { if (e.target == modal) modal.style.display = "none"; };
-    window.addEventListener("keydown", (e) => { if (e.key === "Escape") modal.style.display = "none"; });
+    // Uloženie cenníka
+    window.saveCennik = async function (e) {
+      e.preventDefault();
+      const data = {
+        hodina_individualna: document.getElementById("hodina_individualna").value,
+        dve_osoby: document.getElementById("dve_osoby").value,
+        skupina: document.getElementById("skupina").value,
+        deti: document.getElementById("deti").value
+      };
+      await setDoc(doc(db, "cennik", "default"), data);
+      alert("✅ Cenník bol uložený!");
+      loadCennik();
+    };
   </script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #121212;
+      color: white;
+    }
+    header {
+      background: #333;
+      padding: 15px;
+      text-align: center;
+    }
+    header h1 { margin: 0; }
+    main { padding: 20px; text-align: center; }
+    button {
+      padding: 12px 20px;
+      margin-top: 20px;
+      background: #4CAF50;
+      border: none;
+      color: white;
+      font-size: 16px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    button:hover { background: #45a049; }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.8);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .modal-content {
+      background: #1e1e1e;
+      padding: 20px;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 400px;
+      position: relative;
+    }
+    .close {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      font-size: 22px;
+      cursor: pointer;
+    }
+    input {
+      width: 100%;
+      padding: 8px;
+      margin: 6px 0;
+      border: none;
+      border-radius: 6px;
+      background: #2c2c2c;
+      color: white;
+    }
+    label { display: block; margin-top: 10px; }
+    form button { width: 100%; }
+    #cennikDisplay p { margin: 8px 0; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>🏔️ TONY Ski school Donovaly</h1>
+  </header>
+
+  <main>
+    <p>Vitajte v našej lyžiarskej škole!</p>
+    <button onclick="openCennik()">Zobraziť cenník</button>
+  </main>
+
+  <!-- Modal s cenníkom -->
+  <div class="modal" id="cennikModal">
+    <div class="modal-content">
+      <span class="close" onclick="closeCennik()">&times;</span>
+      <h2>Cenník</h2>
+
+      <!-- Verejný cenník -->
+      <div id="cennikDisplay"><p>Načítavam cenník...</p></div>
+
+      <!-- Admin login -->
+      <div id="loginSection">
+        <h3>🔐 Admin login</h3>
+        <form id="loginForm" onsubmit="login(event)">
+          <label for="loginPassword">Heslo</label>
+          <input type="password" id="loginPassword" required />
+          <button type="submit">Prihlásiť</button>
+        </form>
+      </div>
+
+      <!-- Admin editácia -->
+      <div id="adminSection" style="display:none;">
+        <h3>✏️ Upraviť cenník</h3>
+        <form id="cennikForm" onsubmit="saveCennik(event)">
+          <label>1 hodina individuálna (€)</label>
+          <input type="text" id="hodina_individualna" required />
+          <label>2 osoby spolu (€)</label>
+          <input type="text" id="dve_osoby" required />
+          <label>Skupina (3–6 osôb) (€)</label>
+          <input type="text" id="skupina" required />
+          <label>Deti do 6 rokov (€)</label>
+          <input type="text" id="deti" required />
+          <button type="submit">💾 Uložiť</button>
+        </form>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
