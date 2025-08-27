@@ -52,6 +52,7 @@
         updatePublicCennik(data);
       } else {
         updatePublicCennik({});
+        document.getElementById("publicCennik").innerHTML = "<p>Načítavam cenník...</p>";
       }
     }
 
@@ -159,7 +160,7 @@
       <label for="dve_osoby">2 hodiny (€)</label>
       <input type="text" id="dve_osoby" required />
 
-      <label for="skupina">ďalšia odoba (€)</label>
+      <label for="skupina">ďalšia osoba (€)</label>
       <input type="text" id="skupina" required />
 
       <button type="submit">💾 Uložiť</button>
