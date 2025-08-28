@@ -4,9 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cenník - Lyžiarska škola (Admin)</title>
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -56,83 +53,81 @@
       color: #ccc;
     }
 
-    .admin-login {
-      text-align: center;
-      margin-top: 20px;
-      font-size: 12px;
-      color: #555;
-      cursor: pointer;
+    .admin {
+      margin-top: 40px;
+      padding: 20px;
+      background: #1c1c1c;
+      border-radius: 10px;
     }
 
-    .editor {
-      display: none;
-      margin-top: 20px;
-      padding: 15px;
-      background: #222;
-      border-radius: 12px;
+    label {
+      display: block;
+      margin-top: 10px;
     }
 
-    .editor input {
+    input {
       width: 100%;
       padding: 8px;
-      margin: 5px 0;
-      border-radius: 8px;
+      margin-top: 5px;
       border: none;
-      background: #333;
+      border-radius: 6px;
+      background: #2c2c2c;
       color: #fff;
     }
 
-    .editor button {
-      margin-top: 10px;
-      padding: 10px;
-      width: 100%;
+    button {
+      margin-top: 15px;
+      padding: 10px 20px;
       background: #0a84ff;
       border: none;
       border-radius: 8px;
       color: #fff;
-      font-weight: bold;
+      font-size: 16px;
       cursor: pointer;
+    }
+    button:hover {
+      background: #006edc;
     }
   </style>
 </head>
 <body>
   <h1>📋 Cenník (Admin verzia)</h1>
 
-  <!-- Tento blok sa načíta do index.html -->
-  <div id="publicCennik">
-    <table>
-      <thead>
-        <tr>
-          <th>Dĺžka lekcie</th>
-          <th>Cena</th>
-        </tr>
-      </thead>
-      <tbody id="cennikTable">
-        <!-- Dynamicky sa doplní z Firebase -->
-      </tbody>
-    </table>
-    <p class="note" id="cennikNote"></p>
+  <div id="publicCennik"></div>
+
+  <!-- Admin login a formulár -->
+  <div class="admin">
+    <h2>🔐 Admin login</h2>
+    <form id="loginForm">
+      <label for="loginPassword">Heslo:</label>
+      <input type="password" id="loginPassword" required>
+      <button type="submit">Prihlásiť</button>
+    </form>
+
+    <div id="adminForm" style="display:none;">
+      <h2>✏️ Editácia cenníka</h2>
+      <form id="cennikForm">
+        <label>1 hodina</label>
+        <input type="text" id="hod1" required>
+
+        <label>2 hodiny</label>
+        <input type="text" id="hod2" required>
+
+        <label>Ďalšia osoba</label>
+        <input type="text" id="extra" required>
+
+        <label>Poznámka</label>
+        <input type="text" id="note" required>
+
+        <button type="submit">💾 Uložiť cenník</button>
+      </form>
+    </div>
   </div>
 
-  <!-- Admin login -->
-  <div class="admin-login" id="adminLogin">admin login</div>
-
-  <!-- Editor cien -->
-  <div class="editor" id="editor">
-    <h3>Upraviť cenník</h3>
-    <label>1 hodina</label>
-    <input type="text" id="hod1">
-    <label>2 hodiny</label>
-    <input type="text" id="hod2">
-    <label>Ďalšia osoba</label>
-    <input type="text" id="extra">
-    <label>Poznámka</label>
-    <input type="text" id="noteInput">
-    <button id="savePrices">💾 Uložiť</button>
-  </div>
-
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <script>
-    // Firebase config
+    // 🔥 Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyCf1STUPCcqzuTefIgo2Rca49vpNJY4",
       authDomain: "lyziarska-skola.firebaseapp.com",
@@ -145,48 +140,76 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    const cennikTable = document.getElementById("cennikTable");
-    const cennikNote = document.getElementById("cennikNote");
-    const editor = document.getElementById("editor");
+    const ADMIN_PASSWORD = "tajneheslo";
 
     async function loadCennik() {
-      const doc = await db.collection("cennik").doc("data").get();
-      if (doc.exists) {
-        const data = doc.data();
-        cennikTable.innerHTML = `
-          <tr><td>1 hodina</td><td>${data.hod1} €</td></tr>
-          <tr><td>2 hodiny</td><td>${data.hod2} €</td></tr>
-          <tr><td>Ďalšia osoba</td><td>${data.extra} €</td></tr>
-        `;
-        cennikNote.innerText = data.note;
-        document.getElementById("hod1").value = data.hod1;
-        document.getElementById("hod2").value = data.hod2;
-        document.getElementById("extra").value = data.extra;
-        document.getElementById("noteInput").value = data.note;
+      const docRef = db.collection("cennik").doc("data");
+      const snap = await docRef.get();
+
+      // Ak dokument neexistuje, nastav defaultné hodnoty
+      if (!snap.exists) {
+        await docRef.set({
+          hod1: "49",
+          hod2: "79",
+          extra: "20",
+          note: "ceny sú bez lístka a výstroje"
+        });
+        return loadCennik(); // načítať znova po uložení
       }
+
+      const data = snap.data();
+
+      // vypísať do tabuľky
+      document.getElementById("publicCennik").innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Dĺžka lekcie</th>
+              <th>Cena</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>1 hodina</td><td>${data.hod1} €</td></tr>
+            <tr><td>2 hodiny</td><td>${data.hod2} €</td></tr>
+            <tr><td>Ďalšia osoba</td><td>+${data.extra} €</td></tr>
+          </tbody>
+        </table>
+        <p class="note">* ${data.note}</p>
+      `;
+
+      // predvyplniť admin formulár
+      document.getElementById("hod1").value = data.hod1;
+      document.getElementById("hod2").value = data.hod2;
+      document.getElementById("extra").value = data.extra;
+      document.getElementById("note").value = data.note;
     }
 
-    document.getElementById("savePrices").addEventListener("click", async () => {
+    async function saveCennik(e) {
+      e.preventDefault();
       await db.collection("cennik").doc("data").set({
         hod1: document.getElementById("hod1").value,
         hod2: document.getElementById("hod2").value,
         extra: document.getElementById("extra").value,
-        note: document.getElementById("noteInput").value
+        note: document.getElementById("note").value
       });
-      alert("Cenník bol uložený ✅");
+      alert("✅ Cenník uložený!");
       loadCennik();
-    });
+    }
 
-    // Admin login
-    document.getElementById("adminLogin").addEventListener("click", () => {
-      const pwd = prompt("Zadajte heslo:");
-      if (pwd === "tajneheslo") {
-        editor.style.display = "block";
+    document.getElementById("loginForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const entered = document.getElementById("loginPassword").value;
+      if (entered === ADMIN_PASSWORD) {
+        document.getElementById("loginForm").style.display = "none";
+        document.getElementById("adminForm").style.display = "block";
       } else {
-        alert("Nesprávne heslo ❌");
+        alert("❌ Nesprávne heslo!");
       }
     });
 
+    document.getElementById("cennikForm").addEventListener("submit", saveCennik);
+
+    // načítaj hneď pri spustení
     loadCennik();
   </script>
 </body>
