@@ -45,7 +45,7 @@
       }
     }
 
-    input, select, button {
+    input, select, button, textarea {
       padding: 10px;
       border-radius: 8px;
       border: none;
@@ -68,6 +68,7 @@
       padding: 12px;
       border-bottom: 1px solid #333;
       text-align: left;
+      vertical-align: middle;
     }
 
     th {
@@ -93,10 +94,21 @@
       margin-left: 10px;
     }
 
+    .save-btn {
+      background: dodgerblue;
+      margin-left: 5px;
+    }
+
     .no-data {
       text-align: center;
       padding: 20px;
       color: #aaa;
+    }
+
+    .note-input {
+      width: 100%;
+      resize: vertical;
+      min-height: 40px;
     }
   </style>
 </head>
@@ -224,11 +236,21 @@
           <td>${res.phone}</td>
           <td>${res.email}</td>
           <td>${(res.slots || []).join(", ")}</td>
-          <td>${res.note || ""}</td>
+          <td>
+            <textarea class="note-input" id="note-${res.id}">${res.note || ""}</textarea>
+            <button class="save-btn" onclick="saveNote('${res.id}')">💾</button>
+          </td>
           <td><button class="delete-btn" onclick="deleteReservation('${res.id}')">Vymazať</button></td>
         `;
         reservationTable.appendChild(tr);
       });
+    }
+
+    // uloženie poznámky
+    async function saveNote(id) {
+      const noteValue = document.getElementById("note-" + id).value;
+      await db.collection("rezervacie").doc(id).update({ note: noteValue });
+      alert("✅ Poznámka uložená!");
     }
 
     // vymazanie rezervácie
