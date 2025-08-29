@@ -8,105 +8,31 @@
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #000;
-      color: #fff;
-      margin: 0;
-      padding: 0;
-    }
-    h1 {
-      text-align: center;
-      padding: 20px;
-    }
-    .container {
-      padding: 15px;
-      max-width: 900px;
-      margin: auto;
-    }
-    .filters {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-bottom: 15px;
-    }
-    @media(min-width: 600px) {
-      .filters {
-        flex-direction: row;
-        justify-content: space-between;
-      }
-    }
-    select, input[type="date"] {
-      padding: 10px;
-      border-radius: 8px;
-      border: none;
-      width: 100%;
-      background: #222;
-      color: #fff;
-    }
-    .legend {
-      display: flex;
-      gap: 15px;
-      margin: 10px 0 20px;
-      font-size: 14px;
-    }
+    body { font-family: Arial, sans-serif; background: #000; color: #fff; margin: 0; padding: 0; }
+    h1 { text-align: center; padding: 20px; }
+    .container { padding: 15px; max-width: 900px; margin: auto; }
+    .filters { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
+    @media(min-width: 600px) { .filters { flex-direction: row; justify-content: space-between; } }
+    select, input[type="date"] { padding: 10px; border-radius: 8px; border: none; width: 100%; background: #222; color: #fff; }
+    .legend { display: flex; gap: 15px; margin: 10px 0 20px; font-size: 14px; }
     .legend span { display: flex; align-items: center; gap: 5px; }
     .circle { width: 14px; height: 14px; border-radius: 50%; display: inline-block; }
-    .free { background: green; }
-    .selected { background: gold; }
-    .booked { background: red; }
-    .time-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-    .time-slot {
-      padding: 15px;
-      border-radius: 12px;
-      text-align: center;
-      font-weight: bold;
-      cursor: pointer;
-      background: green;
-      color: #fff;
-    }
+    .free { background: green; } .selected { background: gold; } .booked { background: red; }
+    .time-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .time-slot { padding: 15px; border-radius: 12px; text-align: center; font-weight: bold; cursor: pointer; background: green; color: #fff; }
     .time-slot.selected { background: gold; color: #000; }
     .time-slot.booked { background: red; cursor: not-allowed; }
-    .form-container {
-      background: #111;
-      padding: 20px;
-      border-radius: 12px;
-      margin-top: 25px;
-    }
+    .form-container { background: #111; padding: 20px; border-radius: 12px; margin-top: 25px; }
     .form-container h3 { margin-bottom: 10px; }
     label { display: block; margin-top: 10px; }
-    input, textarea {
-      width: 100%; padding: 10px; margin-top: 5px;
-      border-radius: 8px; border: none; background: #222; color: #fff;
-    }
-    button {
-      margin-top: 20px; width: 100%; padding: 14px;
-      background: #0a84ff; border: none; border-radius: 12px;
-      color: #fff; font-size: 16px; font-weight: bold; cursor: pointer;
-    }
-    .cennik-btn {
-      display: block; margin-top: 15px; text-align: center;
-      padding: 12px; background: #333; border-radius: 12px;
-      color: #fff; font-weight: bold; text-decoration: none; cursor: pointer;
-    }
+    input, textarea { width: 100%; padding: 10px; margin-top: 5px; border-radius: 8px; border: none; background: #222; color: #fff; }
+    button { margin-top: 20px; width: 100%; padding: 14px; background: #0a84ff; border: none; border-radius: 12px; color: #fff; font-size: 16px; font-weight: bold; cursor: pointer; }
+    .cennik-btn { display: block; margin-top: 15px; text-align: center; padding: 12px; background: #333; border-radius: 12px; color: #fff; font-weight: bold; text-decoration: none; cursor: pointer; }
     .cennik-btn:hover { background: #444; }
-    /* Popup štýly */
-    .modal {
-      display: none; position: fixed; z-index: 1000; left: 0; top: 0;
-      width: 100%; height: 100%; overflow: auto; background: rgba(0,0,0,0.8);
-    }
-    .modal-content {
-      background: #1a1a1a; margin: 10% auto; padding: 20px;
-      border-radius: 12px; width: 90%; max-width: 600px;
-      color: #fff; box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-    }
+    .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background: rgba(0,0,0,0.8); }
+    .modal-content { background: #1a1a1a; margin: 10% auto; padding: 20px; border-radius: 12px; width: 90%; max-width: 600px; color: #fff; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
     .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
     .close:hover { color: #fff; }
-    /* nenápadný admin login */
     .admin-link { text-align: center; margin: 30px 0; font-size: 12px; }
     .admin-link a { color: #555; text-decoration: none; }
     .admin-link a:hover { color: #aaa; }
@@ -114,6 +40,7 @@
 </head>
 <body>
   <h1>Rezervácia lekcie</h1>
+
   <div class="container">
     <!-- Výber dátumu a lekcie -->
     <div class="filters">
@@ -201,6 +128,7 @@
         const div = document.createElement("div");
         div.classList.add("time-slot");
         div.innerText = time;
+
         if (bookedSlots.includes(time)) {
           div.classList.add("booked");
         } else {
@@ -227,7 +155,9 @@
         .where("sport", "==", sport)
         .get();
       let booked = [];
-      snapshot.forEach(doc => { booked = booked.concat(doc.data().slots || []); });
+      snapshot.forEach(doc => {
+        booked = booked.concat(doc.data().slots || []);
+      });
       renderSlots(booked);
     }
 
@@ -241,15 +171,18 @@
       const note = document.getElementById("note").value;
       const date = dateInput.value;
       const sport = sportSelect.value;
+
       if (!name || !phone || !email || selectedSlots.length === 0) {
         alert("Vyplňte všetky údaje a vyberte hodiny.");
         return;
       }
+
       await db.collection("rezervacie").add({
         name, phone, email, note, date, sport,
         slots: selectedSlots,
         createdAt: new Date()
       });
+
       alert("Rezervácia úspešná!");
       selectedSlots = [];
       loadReservations();
