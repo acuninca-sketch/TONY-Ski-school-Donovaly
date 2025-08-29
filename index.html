@@ -148,11 +148,9 @@
 
     async function loadReservations() {
       const date = dateInput.value;
-      const sport = sportSelect.value;
       if (!date) return;
       const snapshot = await db.collection("rezervacie")
         .where("date", "==", date)
-        .where("sport", "==", sport)
         .get();
       let booked = [];
       snapshot.forEach(doc => {
@@ -180,7 +178,7 @@
       await db.collection("rezervacie").add({
         name, phone, email, note, date, sport,
         slots: selectedSlots,
-        createdAt: new Date()
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
 
       alert("Rezervácia úspešná!");
