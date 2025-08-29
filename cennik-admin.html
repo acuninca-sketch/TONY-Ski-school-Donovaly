@@ -3,103 +3,47 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cenník - Admin</title>
-  <!-- Firebase -->
+  <title>Admin - Cenník</title>
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #111;
-      color: #fff;
-      margin: 0;
-      padding: 20px;
+    body { font-family: Arial, sans-serif; background:#000; color:#fff; padding:20px; }
+    .form-container {
+      background:#111; padding:20px; border-radius:12px; max-width:400px; margin:auto;
     }
-
-    h1 {
-      text-align: center;
-      margin-bottom: 20px;
-    }
-
-    .login, .editor {
-      max-width: 500px;
-      margin: 30px auto;
-      background: #1c1c1c;
-      padding: 20px;
-      border-radius: 12px;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.4);
-    }
-
-    label {
-      display: block;
-      margin-top: 10px;
-    }
-
+    label { display:block; margin-top:10px; }
     input, textarea {
-      width: 100%;
-      padding: 10px;
-      margin-top: 5px;
-      border-radius: 8px;
-      border: none;
-      background: #222;
-      color: #fff;
+      width:100%; padding:10px; border:none; border-radius:8px;
+      background:#222; color:#fff; margin-top:5px;
     }
-
     button {
-      margin-top: 20px;
-      width: 100%;
-      padding: 14px;
-      background: #0a84ff;
-      border: none;
-      border-radius: 12px;
-      color: #fff;
-      font-size: 16px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background: #0066cc;
-    }
-
-    .note {
-      margin-top: 10px;
-      font-size: 13px;
-      color: #ccc;
-      text-align: center;
+      margin-top:20px; width:100%; padding:12px;
+      background:#0a84ff; border:none; border-radius:12px;
+      color:#fff; font-weight:bold; cursor:pointer;
     }
   </style>
 </head>
 <body>
-  <h1>📋 Admin - Cenník</h1>
-
-  <!-- Login sekcia -->
-  <div class="login" id="loginBox">
-    <label for="password">Zadaj heslo:</label>
-    <input type="password" id="password">
-    <button onclick="checkPassword()">Prihlásiť sa</button>
-    <p class="note">* len pre administrátora</p>
+  <h2 style="text-align:center;">Admin Cenník</h2>
+  <div id="loginBox" class="form-container">
+    <label>Heslo:</label>
+    <input type="password" id="adminPass">
+    <button onclick="checkLogin()">Prihlásiť</button>
   </div>
-
-  <!-- Editor sekcia -->
-  <div class="editor" id="editorBox" style="display:none;">
+  <div id="adminBox" class="form-container" style="display:none;">
     <label>1 hodina (€)</label>
-    <input type="text" id="cena1">
-
+    <input type="number" id="hod1">
     <label>2 hodiny (€)</label>
-    <input type="text" id="cena2">
-
-    <label>Ďalšia osoba (+€)</label>
-    <input type="text" id="cenaExtra">
-
+    <input type="number" id="hod2">
+    <label>Ďalšia osoba (€)</label>
+    <input type="number" id="extra">
     <label>Poznámka</label>
     <textarea id="poznamka"></textarea>
-
-    <button onclick="ulozitCennik()">💾 Uložiť do Firebase</button>
+    <button onclick="saveCennik()">💾 Uložiť cenník</button>
   </div>
 
   <script>
-    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyCf1STUPCcqzuTefIgo2Rca49vpNJY4",
       authDomain: "lyziarska-skola.firebaseapp.com",
@@ -113,45 +57,39 @@
     const db = firebase.firestore();
 
     const loginBox = document.getElementById("loginBox");
-    const editorBox = document.getElementById("editorBox");
+    const adminBox = document.getElementById("adminBox");
 
-    function checkPassword() {
-      const pass = document.getElementById("password").value;
+    function checkLogin() {
+      const pass = document.getElementById("adminPass").value;
       if (pass === "tajneheslo") {
         loginBox.style.display = "none";
-        editorBox.style.display = "block";
-        nacitajCennik();
+        adminBox.style.display = "block";
+        loadCennik();
       } else {
-        alert("Nesprávne heslo!");
+        alert("Nesprávne heslo");
       }
     }
 
-    async function nacitajCennik() {
-      const docRef = db.collection("cennik").doc("aktualny");
-      const docSnap = await docRef.get();
+    async function loadCennik() {
+      const docSnap = await db.collection("cennik").doc("aktualny").get();
       if (docSnap.exists) {
-        const data = docSnap.data();
-        document.getElementById("cena1").value = data.cena1 || "";
-        document.getElementById("cena2").value = data.cena2 || "";
-        document.getElementById("cenaExtra").value = data.cenaExtra || "";
-        document.getElementById("poznamka").value = data.poznamka || "";
+        const d = docSnap.data();
+        document.getElementById("hod1").value = d.hod1 || "";
+        document.getElementById("hod2").value = d.hod2 || "";
+        document.getElementById("extra").value = d.extra || "";
+        document.getElementById("poznamka").value = d.poznamka || "";
       }
     }
 
-    async function ulozitCennik() {
-      const c1 = document.getElementById("cena1").value;
-      const c2 = document.getElementById("cena2").value;
-      const extra = document.getElementById("cenaExtra").value;
-      const note = document.getElementById("poznamka").value;
-
+    async function saveCennik() {
+      const hod1 = document.getElementById("hod1").value;
+      const hod2 = document.getElementById("hod2").value;
+      const extra = document.getElementById("extra").value;
+      const poznamka = document.getElementById("poznamka").value;
       await db.collection("cennik").doc("aktualny").set({
-        cena1: c1,
-        cena2: c2,
-        cenaExtra: extra,
-        poznamka: note
+        hod1, hod2, extra, poznamka
       });
-
-      alert("✅ Cenník bol uložený!");
+      alert("Cenník bol uložený ✅");
     }
   </script>
 </body>
