@@ -217,13 +217,14 @@
       });
 
       // 🔄 zoradenie podľa dátumu a hodiny
-      lastSnapshot.sort((a, b) => {
-        if (a.date < b.date) return -1;
-        if (a.date > b.date) return 1;
+           snapshot.forEach(doc => {
+        const data = doc.data();
+        lastSnapshot.push({ id: doc.id, ...data });
+      });
 
-        const timeA = (a.slots || [])[0] || "";
-        const timeB = (b.slots || [])[0] || "";
-        return timeA.localeCompare(timeB);
+      // 🔄 zoradenie podľa času vytvorenia (najnovšie hore)
+      lastSnapshot.sort((a, b) => {
+        return (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0);
       });
 
       // vykreslenie tabuľky
