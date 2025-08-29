@@ -3,47 +3,123 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin - Cenník</title>
-  <!-- Firebase SDK -->
+  <title>Cenník - Lyžiarska škola (Admin)</title>
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; background:#000; color:#fff; padding:20px; }
-    .form-container {
-      background:#111; padding:20px; border-radius:12px; max-width:400px; margin:auto;
+    body {
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #fff;
+      margin: 0;
+      padding: 20px;
     }
-    label { display:block; margin-top:10px; }
-    input, textarea {
-      width:100%; padding:10px; border:none; border-radius:8px;
-      background:#222; color:#fff; margin-top:5px;
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
     }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #1c1c1c;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 12px;
+      text-align: center;
+      border-bottom: 1px solid #333;
+    }
+
+    th {
+      background: #0a84ff;
+      color: #fff;
+      font-size: 16px;
+    }
+
+    tr:nth-child(even) {
+      background: #222;
+    }
+
+    tr:hover {
+      background: #333;
+    }
+
+    input {
+      width: 100%;
+      padding: 6px;
+      border: none;
+      border-radius: 6px;
+      background: #222;
+      color: #fff;
+      text-align: center;
+    }
+
     button {
-      margin-top:20px; width:100%; padding:12px;
-      background:#0a84ff; border:none; border-radius:12px;
-      color:#fff; font-weight:bold; cursor:pointer;
+      margin-top: 20px;
+      width: 100%;
+      padding: 14px;
+      background: #0a84ff;
+      border: none;
+      border-radius: 12px;
+      color: #fff;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .note {
+      margin-top: 15px;
+      font-size: 14px;
+      text-align: center;
+      color: #ccc;
     }
   </style>
 </head>
 <body>
-  <h2 style="text-align:center;">Admin Cenník</h2>
-  <div id="loginBox" class="form-container">
-    <label>Heslo:</label>
-    <input type="password" id="adminPass">
-    <button onclick="checkLogin()">Prihlásiť</button>
+  <h1>📋 Cenník (Admin verzia)</h1>
+
+  <div id="loginSection">
+    <p style="text-align:center;">Zadaj admin heslo:</p>
+    <input type="password" id="adminPass" placeholder="Heslo" style="width:100%;padding:10px;border-radius:8px;border:none;margin-bottom:10px;background:#222;color:#fff;">
+    <button onclick="checkLogin()">🔑 Prihlásiť</button>
   </div>
-  <div id="adminBox" class="form-container" style="display:none;">
-    <label>1 hodina (€)</label>
-    <input type="number" id="hod1">
-    <label>2 hodiny (€)</label>
-    <input type="number" id="hod2">
-    <label>Ďalšia osoba (€)</label>
-    <input type="number" id="extra">
+
+  <div id="adminContent" style="display:none;">
+    <table>
+      <thead>
+        <tr>
+          <th>Dĺžka lekcie</th>
+          <th>Cena za osobu</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>1 hodina</td>
+          <td><input type="text" id="hod1"></td>
+        </tr>
+        <tr>
+          <td>2 hodiny</td>
+          <td><input type="text" id="hod2"></td>
+        </tr>
+        <tr>
+          <td>Ďalšia osoba</td>
+          <td><input type="text" id="extra"></td>
+        </tr>
+      </tbody>
+    </table>
     <label>Poznámka</label>
-    <textarea id="poznamka"></textarea>
+    <input type="text" id="poznamka">
     <button onclick="saveCennik()">💾 Uložiť cenník</button>
+    <p class="note">* Tento cenník sa zobrazuje návštevníkom na hlavnej stránke.</p>
   </div>
 
   <script>
+    // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyCf1STUPCcqzuTefIgo2Rca49vpNJY4",
       authDomain: "lyziarska-skola.firebaseapp.com",
@@ -56,28 +132,43 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    const loginBox = document.getElementById("loginBox");
-    const adminBox = document.getElementById("adminBox");
+    const correctPassword = "tajneheslo"; // 🔐 admin heslo
 
     function checkLogin() {
-      const pass = document.getElementById("adminPass").value;
-      if (pass === "tajneheslo") {
-        loginBox.style.display = "none";
-        adminBox.style.display = "block";
-        loadCennik();
+      const input = document.getElementById("adminPass").value;
+      if (input === correctPassword) {
+        document.getElementById("loginSection").style.display = "none";
+        document.getElementById("adminContent").style.display = "block";
+        initCennik();
       } else {
-        alert("Nesprávne heslo");
+        alert("Nesprávne heslo!");
       }
+    }
+
+    async function initCennik() {
+      const docRef = db.collection("cennik").doc("aktualny");
+      const docSnap = await docRef.get();
+
+      if (!docSnap.exists) {
+        // 👉 Ak ešte neexistuje, vytvoríme default dáta
+        await docRef.set({
+          hod1: "49 €",
+          hod2: "79 €",
+          extra: "+20 €",
+          poznamka: "Ceny sú bez lístka a výstroje."
+        });
+      }
+      loadCennik();
     }
 
     async function loadCennik() {
       const docSnap = await db.collection("cennik").doc("aktualny").get();
       if (docSnap.exists) {
-        const d = docSnap.data();
-        document.getElementById("hod1").value = d.hod1 || "";
-        document.getElementById("hod2").value = d.hod2 || "";
-        document.getElementById("extra").value = d.extra || "";
-        document.getElementById("poznamka").value = d.poznamka || "";
+        const data = docSnap.data();
+        document.getElementById("hod1").value = data.hod1 || "";
+        document.getElementById("hod2").value = data.hod2 || "";
+        document.getElementById("extra").value = data.extra || "";
+        document.getElementById("poznamka").value = data.poznamka || "";
       }
     }
 
@@ -86,10 +177,12 @@
       const hod2 = document.getElementById("hod2").value;
       const extra = document.getElementById("extra").value;
       const poznamka = document.getElementById("poznamka").value;
+
       await db.collection("cennik").doc("aktualny").set({
         hod1, hod2, extra, poznamka
       });
-      alert("Cenník bol uložený ✅");
+
+      alert("✅ Cenník bol uložený!");
     }
   </script>
 </body>
