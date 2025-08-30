@@ -36,6 +36,8 @@
     .admin-link { text-align: center; margin: 30px 0; font-size: 12px; }
     .admin-link a { color: #555; text-decoration: none; }
     .admin-link a:hover { color: #aaa; }
+    .mode-label { font-size: 13px; color:#bbb; margin-bottom:4px; display:block; }
+    .mode-status { font-weight:bold; color:#0af; }
   </style>
 </head>
 <body>
@@ -49,7 +51,7 @@
         <input type="date" id="date">
       </div>
       <div>
-        <label for="sport">Typ lekcie</label>
+        <label class="mode-label">Typ lekcie (<span id="modeStatus" class="mode-status">Načítavam...</span>)</label>
         <select id="sport">
           <option value="lyze">Lyže</option>
           <option value="snb">Snowboard</option>
@@ -78,7 +80,6 @@
       <input type="email" id="email">
       <label>Poznámka</label>
       <textarea id="note"></textarea>
-      <!-- 🔒 admin poznámka odstránená zo zákazníckeho formulára -->
       <button id="submitReservation">📌 Rezervovať vybraté hodiny</button>
       <div class="cennik-btn" id="openCennik">📋 Cenník</div>
     </div>
@@ -121,11 +122,39 @@
     const timeGrid = document.getElementById("timeGrid");
     const dateInput = document.getElementById("date");
     const sportSelect = document.getElementById("sport");
+    const modeStatus = document.getElementById("modeStatus");
     let selectedSlots = [];
+    let sportMode = "dual"; // default
+
+    // Načíta mód športu z Firestore
+    async function loadSportMode() {
+      const doc = await db.collection("config").doc("sportMode").get();
+      if (doc.exists) {
+        sportMode = doc.data().mode || "dual";
+      } else {
+        sportMode = "dual";
+      }
+      applySportMode();
+    }
+
+    function applySportMode() {
+      if (sportMode === "dual") {
+        sportSelect.style.display = "block";
+        modeStatus.textContent = "Dual (Lyže / Snowboard)";
+      } else if (sportMode === "lyze") {
+        sportSelect.style.display = "none";
+        sportSelect.value = "lyze";
+        modeStatus.textContent = "Len Lyže";
+      } else if (sportMode === "snb") {
+        sportSelect.style.display = "none";
+        sportSelect.value = "snb";
+        modeStatus.textContent = "Len Snowboard";
+      }
+    }
 
     function renderSlots(bookedSlots=[]) {
       timeGrid.innerHTML = "";
-      selectedSlots = []; // 🔒 vždy reset pri vykreslení
+      selectedSlots = [];
       times.forEach(time => {
         const div = document.createElement("div");
         div.classList.add("time-slot");
@@ -177,7 +206,6 @@
         return;
       }
 
-      // 🔒 Kontrola max 7 dní dopredu
       const today = new Date();
       const selectedDate = new Date(date);
       const diffDays = Math.ceil((selectedDate - today) / (1000 * 60 * 60 * 24));
@@ -186,7 +214,6 @@
         return;
       }
 
-      // 🔒 Kontrola duplicít
       const existing = await db.collection("rezervacie")
         .where("date", "==", date)
         .get();
@@ -198,18 +225,16 @@
         return;
       }
 
-      // Uloženie iba 1x, adminNote prázdny
       await db.collection("rezervacie").add({
         name, phone, email, note,
         adminNote: "",
         date, sport,
-        slots: [...selectedSlots], // 🔒 iba aktuálny výber
+        slots: [...selectedSlots],
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
 
       alert("Rezervácia úspešná!");
 
-      // 🔒 reset po úspešnom odoslaní
       document.getElementById("name").value = "";
       document.getElementById("phone").value = "";
       document.getElementById("email").value = "";
@@ -218,9 +243,9 @@
       loadReservations();
     });
 
-    // Default dnešný dátum
     dateInput.valueAsDate = new Date();
     loadReservations();
+    loadSportMode();
 
     // === Popup logika pre cenník ===
     const modal = document.getElementById("cennikModal");
