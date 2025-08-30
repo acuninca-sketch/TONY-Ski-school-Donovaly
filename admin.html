@@ -1,73 +1,73 @@
+
 <!DOCTYPE html>
 <html lang="sk">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin - Rezervácie</title>
-  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
   <style>
     body { font-family: Arial, sans-serif; background: #000; color: #fff; margin: 0; padding: 0; }
     h1 { text-align: center; padding: 20px; }
-    .container { padding: 15px; max-width: 1000px; margin: auto; }
-    .topbar { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px; margin-bottom: 20px; }
-    button { padding: 10px 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
-    .csv-btn { background: #0a84ff; color: #fff; }
-    .refresh-btn { background: #444; color: #fff; }
-    .mode-select { background: #222; color: #fff; border: none; border-radius: 8px; padding: 10px; }
+    .container { padding: 15px; max-width: 1100px; margin: auto; }
+    .top-actions { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; align-items: center; }
+    .top-actions button { padding: 12px; border: none; border-radius: 12px; color: #fff; font-weight: bold; cursor: pointer; }
+    .export-btn { background: green; }
+    .refresh-btn { background: #0a84ff; }
+    .filter-date { background: #222; color: #fff; padding: 10px; border: none; border-radius: 10px; }
+    .mode-btn { background: #444; }
+    .mode-btn.active { background: orange; }
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { border: 1px solid #333; padding: 8px; text-align: center; }
+    th, td { padding: 10px; border: 1px solid #444; text-align: left; }
     th { background: #111; }
+    tr:nth-child(even) { background: #1a1a1a; }
+    .admin-actions { display: flex; gap: 10px; }
+    .admin-actions button { flex: 1; padding: 8px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+    .delete-btn { background: red; color: #fff; }
+    .save-btn { background: #0a84ff; color: #fff; }
+    textarea { width: 100%; background: #222; color: #fff; border: none; border-radius: 6px; padding: 6px; }
   </style>
 </head>
 <body>
-  <div id="superAdminPanel" style="display:none; margin-top:10px;">
-  <input type="email" id="adminEmail" placeholder="Email užívateľa"
-         style="padding:8px; border-radius:6px; border:none; width:200px;">
-  <button onclick="addAdmin()" style="background:green; padding:8px; border:none; border-radius:6px; color:#fff;">➕ Pridať admina</button>
-  <button onclick="removeAdmin()" style="background:red; padding:8px; border:none; border-radius:6px; color:#fff;">❌ Odobrať admina</button>
-</div>
   <h1>Admin - Rezervácie</h1>
   <div class="container">
-    <div class="topbar">
+    <div class="top-actions">
+      <button class="export-btn" onclick="exportCSV()">📥 Exportovať do CSV</button>
+      <button class="refresh-btn" onclick="loadReservations()">🔄 Refresh</button>
+      <input type="date" id="filterDate" class="filter-date" onchange="applyDateFilter()">
       <div>
-        <label for="filterDate">Filtrovať podľa dátumu: </label>
-        <input type="date" id="filterDate">
-      </div>
-      <div>
-        <button class="csv-btn" id="exportCSV">📥 Export CSV</button>
-        <button class="refresh-btn" id="refreshBtn">🔄 Refresh</button>
-      </div>
-      <div>
-        <label for="sportModeSelect">Režim športu: </label>
-        <select id="sportModeSelect" class="mode-select">
-          <option value="dual">Dual (výber lyže/snb)</option>
-          <option value="lyze">Len Lyže</option>
-          <option value="snb">Len Snowboard</option>
-        </select>
-        <button id="saveSportMode">💾 Uložiť</button>
+        <button id="modeDual" class="mode-btn" onclick="setSportMode('dual')">Dual</button>
+        <button id="modeLyze" class="mode-btn" onclick="setSportMode('lyze')">Lyže</button>
+        <button id="modeSnb" class="mode-btn" onclick="setSportMode('snb')">SNB</button>
       </div>
     </div>
-
-    <table id="reservationsTable">
+    <table id="reservationTable">
       <thead>
         <tr>
-          <th>Dátum</th>
-          <th>Časy</th>
           <th>Meno</th>
           <th>Telefón</th>
           <th>Email</th>
           <th>Šport</th>
+          <th>Dátum</th>
+          <th>Hodiny</th>
           <th>Poznámka</th>
-          <th>Poznámka admin</th>
+          <th>Interná poznámka</th>
+          <th>Akcie</th>
         </tr>
       </thead>
-      <tbody id="reservationsBody"></tbody>
+      <tbody></tbody>
     </table>
   </div>
 
   <script>
+    // Ochrana heslom
+    const password = prompt("Zadajte heslo pre vstup:");
+    if (password !== "tajneheslo") {
+      document.body.innerHTML = "<h2 style='color:red;text-align:center;margin-top:50px;'>Nesprávne heslo!</h2>";
+      throw new Error("Neplatný prístup");
+    }
+
     // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyCf1STUPCcqzuTefIgo2Rca49vpNJY4",
@@ -81,109 +81,102 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    const reservationsBody = document.getElementById("reservationsBody");
-    const filterDate = document.getElementById("filterDate");
+    const tableBody = document.querySelector("#reservationTable tbody");
 
-    async function loadReservations() {
-      reservationsBody.innerHTML = "";
-      let query = db.collection("rezervacie").orderBy("date");
-      if (filterDate.value) {
-        query = query.where("date", "==", filterDate.value);
-      }
-      const snapshot = await query.get();
+    // Načítanie rezervácií
+    async function loadReservations(filter = null) {
+      const snapshot = await db.collection("rezervacie").orderBy("createdAt", "desc").get();
+      tableBody.innerHTML = "";
       snapshot.forEach(doc => {
         const data = doc.data();
+        if (filter && data.date !== filter) return;
+
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td>${data.date}</td>
-          <td>${(data.slots || []).join(", ")}</td>
           <td>${data.name}</td>
           <td>${data.phone}</td>
           <td>${data.email}</td>
-          <td>${data.sport || "-"}</td>
+          <td>${data.sport}</td>
+          <td>${data.date}</td>
+          <td>${(data.slots || []).join(", ")}</td>
           <td>${data.note || ""}</td>
-          <td>${data.adminNote || ""}</td>
+          <td>
+            <textarea data-id="${doc.id}" class="adminNote">${data.adminNote || ""}</textarea>
+          </td>
+          <td>
+            <div class="admin-actions">
+              <button class="save-btn" onclick="saveAdminNote('${doc.id}')">💾 Uložiť</button>
+              <button class="delete-btn" onclick="deleteReservation('${doc.id}')">❌ Vymazať</button>
+            </div>
+          </td>
         `;
-        reservationsBody.appendChild(tr);
+        tableBody.appendChild(tr);
       });
     }
-// Zobrazíme superadmin panel len pre superadmina
-firebase.auth().onAuthStateChanged(async user => {
-  if (user) {
-    const token = await user.getIdTokenResult();
-    if (token.claims.superadmin) {
-      document.getElementById("superAdminPanel").style.display = "block";
+
+    function applyDateFilter() {
+      const selectedDate = document.getElementById("filterDate").value;
+      if (selectedDate) loadReservations(selectedDate);
+      else loadReservations();
     }
-  }
-});
 
-async function addAdmin() {
-  const email = document.getElementById("adminEmail").value;
-  const setAdmin = functions.httpsCallable("setAdmin");
-  try {
-    const res = await setAdmin({ email });
-    alert(res.data.message);
-  } catch (err) {
-    alert("Chyba: " + err.message);
-  }
-}
+    async function saveAdminNote(id) {
+      const textarea = document.querySelector(`textarea[data-id='${id}']`);
+      const value = textarea.value;
+      await db.collection("rezervacie").doc(id).update({ adminNote: value });
+      alert("Interná poznámka uložená!");
+    }
 
-async function removeAdmin() {
-  const email = document.getElementById("adminEmail").value;
-  const removeAdmin = functions.httpsCallable("removeAdmin");
-  try {
-    const res = await removeAdmin({ email });
-    alert(res.data.message);
-  } catch (err) {
-    alert("Chyba: " + err.message);
-  }
-}
-    
-    // CSV export
-    document.getElementById("exportCSV").addEventListener("click", async () => {
-      let query = db.collection("rezervacie").orderBy("date");
-      if (filterDate.value) query = query.where("date", "==", filterDate.value);
-      const snapshot = await query.get();
-
-      let csv = "Dátum;Časy;Meno;Telefón;Email;Šport;Poznámka;Admin poznámka\n";
-      snapshot.forEach(doc => {
-        const d = doc.data();
-        csv += `${d.date};"${(d.slots||[]).join(", ")}";${d.name};${d.phone};${d.email};${d.sport||""};${d.note||""};${d.adminNote||""}\n`;
-      });
-
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "rezervacie.csv";
-      a.click();
-    });
-
-    // Refresh
-    document.getElementById("refreshBtn").addEventListener("click", loadReservations);
-    filterDate.addEventListener("change", loadReservations);
-
-    // SportMode load & save
-    const sportModeSelect = document.getElementById("sportModeSelect");
-    const saveSportModeBtn = document.getElementById("saveSportMode");
-
-    async function loadSportMode() {
-      const snap = await db.collection("settings").doc("sportMode").get();
-      if (snap.exists) {
-        sportModeSelect.value = snap.data().mode || "dual";
+    async function deleteReservation(id) {
+      if (confirm("Naozaj chcete vymazať túto rezerváciu?")) {
+        await db.collection("rezervacie").doc(id).delete();
+        loadReservations();
       }
     }
 
-    saveSportModeBtn.addEventListener("click", async () => {
-      await db.collection("settings").doc("sportMode").set({ mode: sportModeSelect.value });
-      alert("Režim športu bol uložený!");
-    });
+    async function exportCSV() {
+      const snapshot = await db.collection("rezervacie").orderBy("createdAt", "desc").get();
+      let csv = "Meno;Telefón;Email;Šport;Dátum;Hodiny;Poznámka;Interná poznámka\n";
+      snapshot.forEach(doc => {
+        const d = doc.data();
+        csv += `"${d.name}";"${d.phone}";"${d.email}";"${d.sport}";"${d.date}";"${(d.slots||[]).join(", ")}";"${d.note||""}";"${d.adminNote||""}"\n`;
+      });
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "rezervacie.csv";
+      link.click();
+    }
 
-    // Init
+    // Prepínače športového režimu
+    async function setSportMode(mode) {
+      await db.collection("settings").doc("sportMode").set({
+        mode: mode,
+      });
+      updateModeButtons(mode);
+      alert("Režim športu nastavený na: " + mode);
+    }
+
+    function updateModeButtons(active) {
+      ["modeDual", "modeLyze", "modeSnb"].forEach(id => {
+        document.getElementById(id).classList.remove("active");
+      });
+      if (active === "dual") document.getElementById("modeDual").classList.add("active");
+      if (active === "lyze") document.getElementById("modeLyze").classList.add("active");
+      if (active === "snb") document.getElementById("modeSnb").classList.add("active");
+    }
+
+    async function loadSportMode() {
+      const docRef = await db.collection("settings").doc("sportMode").get();
+      if (docRef.exists) {
+        updateModeButtons(docRef.data().mode);
+      } else {
+        updateModeButtons("dual");
+      }
+    }
+
     loadReservations();
     loadSportMode();
-    // Inicializácia Functions
-const functions = firebase.app().functions("europe-central2"); // alebo region kde máš Functions
   </script>
 </body>
 </html>
