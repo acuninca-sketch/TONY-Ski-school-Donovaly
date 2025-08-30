@@ -149,7 +149,10 @@
 
     // Prepínače športového režimu
     async function setSportMode(mode) {
-      await db.collection("settings").doc("sportAvailability").set({ mode: mode });
+      await db.collection("settings").doc("sportMode").set({
+        mode: mode,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
       updateModeButtons(mode);
       alert("Režim športu nastavený na: " + mode);
     }
@@ -164,7 +167,7 @@
     }
 
     async function loadSportMode() {
-      const docRef = await db.collection("settings").doc("sportAvailability").get();
+      const docRef = await db.collection("settings").doc("sportMode").get();
       if (docRef.exists) {
         updateModeButtons(docRef.data().mode);
       } else {
