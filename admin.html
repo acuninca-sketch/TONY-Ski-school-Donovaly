@@ -107,7 +107,38 @@
         reservationsBody.appendChild(tr);
       });
     }
+// Zobrazíme superadmin panel len pre superadmina
+firebase.auth().onAuthStateChanged(async user => {
+  if (user) {
+    const token = await user.getIdTokenResult();
+    if (token.claims.superadmin) {
+      document.getElementById("superAdminPanel").style.display = "block";
+    }
+  }
+});
 
+async function addAdmin() {
+  const email = document.getElementById("adminEmail").value;
+  const setAdmin = functions.httpsCallable("setAdmin");
+  try {
+    const res = await setAdmin({ email });
+    alert(res.data.message);
+  } catch (err) {
+    alert("Chyba: " + err.message);
+  }
+}
+
+async function removeAdmin() {
+  const email = document.getElementById("adminEmail").value;
+  const removeAdmin = functions.httpsCallable("removeAdmin");
+  try {
+    const res = await removeAdmin({ email });
+    alert(res.data.message);
+  } catch (err) {
+    alert("Chyba: " + err.message);
+  }
+}
+    
     // CSV export
     document.getElementById("exportCSV").addEventListener("click", async () => {
       let query = db.collection("rezervacie").orderBy("date");
@@ -153,38 +184,6 @@
     loadSportMode();
     // Inicializácia Functions
 const functions = firebase.app().functions("europe-central2"); // alebo region kde máš Functions
-
-// Zobrazíme superadmin panel len pre superadmina
-firebase.auth().onAuthStateChanged(async user => {
-  if (user) {
-    const token = await user.getIdTokenResult();
-    if (token.claims.superadmin) {
-      document.getElementById("superAdminPanel").style.display = "block";
-    }
-  }
-});
-
-async function addAdmin() {
-  const email = document.getElementById("adminEmail").value;
-  const setAdmin = functions.httpsCallable("setAdmin");
-  try {
-    const res = await setAdmin({ email });
-    alert(res.data.message);
-  } catch (err) {
-    alert("Chyba: " + err.message);
-  }
-}
-
-async function removeAdmin() {
-  const email = document.getElementById("adminEmail").value;
-  const removeAdmin = functions.httpsCallable("removeAdmin");
-  try {
-    const res = await removeAdmin({ email });
-    alert(res.data.message);
-  } catch (err) {
-    alert("Chyba: " + err.message);
-  }
-}
   </script>
 </body>
 </html>
