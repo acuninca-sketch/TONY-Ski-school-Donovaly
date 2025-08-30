@@ -10,6 +10,10 @@
     body { font-family: Arial, sans-serif; background: #000; color: #fff; margin: 0; padding: 0; }
     h1 { text-align: center; padding: 20px; }
     .container { padding: 15px; max-width: 1000px; margin: auto; }
+    .top-actions { display: flex; gap: 10px; margin-bottom: 15px; }
+    .top-actions button { flex: 1; padding: 12px; border: none; border-radius: 12px; color: #fff; font-weight: bold; cursor: pointer; }
+    .export-btn { background: green; }
+    .refresh-btn { background: #0a84ff; }
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
     th, td { padding: 10px; border: 1px solid #444; text-align: left; }
     th { background: #111; }
@@ -19,13 +23,15 @@
     .delete-btn { background: red; color: #fff; }
     .save-btn { background: #0a84ff; color: #fff; }
     textarea { width: 100%; background: #222; color: #fff; border: none; border-radius: 6px; padding: 6px; }
-    .export-btn { margin-top: 20px; padding: 12px; background: green; border: none; border-radius: 12px; color: #fff; font-weight: bold; cursor: pointer; }
   </style>
 </head>
 <body>
   <h1>Admin - Rezervácie</h1>
   <div class="container">
-    <button class="export-btn" onclick="exportCSV()">📥 Exportovať do CSV</button>
+    <div class="top-actions">
+      <button class="export-btn" onclick="exportCSV()">📥 Exportovať do CSV</button>
+      <button class="refresh-btn" onclick="loadReservations()">🔄 Refresh</button>
+    </div>
     <table id="reservationTable">
       <thead>
         <tr>
@@ -45,12 +51,11 @@
   </div>
 
   <script>
-    // 🔐 Heslo pre vstup
-    const correctPassword = "tajneheslo";
-    const entered = prompt("Zadajte heslo pre prístup k administrácii:");
-    if (entered !== correctPassword) {
-      document.body.innerHTML = "<h2 style='color:red;text-align:center;margin-top:50px;'>Prístup zamietnutý ❌</h2>";
-      throw new Error("Nesprávne heslo");
+    // Ochrana heslom
+    const password = prompt("Zadajte heslo pre vstup:");
+    if (password !== "tajneheslo") {
+      document.body.innerHTML = "<h2 style='color:red;text-align:center;margin-top:50px;'>Nesprávne heslo!</h2>";
+      throw new Error("Neplatný prístup");
     }
 
     // Firebase config
