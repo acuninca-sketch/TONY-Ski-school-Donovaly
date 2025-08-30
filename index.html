@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!DOCTYPE html> 
 <html lang="sk">
 <head>
   <meta charset="UTF-8">
@@ -175,6 +175,28 @@
         return;
       }
 
+      // 🔒 Kontrola max 7 dní dopredu
+      const today = new Date();
+      const selectedDate = new Date(date);
+      const diffDays = Math.ceil((selectedDate - today) / (1000 * 60 * 60 * 24));
+      if (diffDays < 0 || diffDays > 7) {
+        alert("Rezervovať je možné iba na najbližších 7 dní.");
+        return;
+      }
+
+      // 🔒 Kontrola duplicít
+      const existing = await db.collection("rezervacie")
+        .where("date", "==", date)
+        .get();
+      let booked = [];
+      existing.forEach(doc => booked = booked.concat(doc.data().slots || []));
+      const conflict = selectedSlots.some(slot => booked.includes(slot));
+      if (conflict) {
+        alert("Niektorý z vybraných časov je už rezervovaný.");
+        return;
+      }
+
+      // Uloženie iba 1x
       await db.collection("rezervacie").add({
         name, phone, email, note, date, sport,
         slots: selectedSlots,
@@ -220,6 +242,5 @@
     window.onclick = (e) => { if (e.target == modal) modal.style.display = "none"; };
     window.addEventListener("keydown", (e) => { if (e.key === "Escape") modal.style.display = "none"; });
   </script>
-  <script src="rezervacie.js"></script>
 </body>
 </html>
