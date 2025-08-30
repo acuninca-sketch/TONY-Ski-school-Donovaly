@@ -45,6 +45,14 @@
   </div>
 
   <script>
+    // 🔐 Heslo pre vstup
+    const correctPassword = "tajneheslo";
+    const entered = prompt("Zadajte heslo pre prístup k administrácii:");
+    if (entered !== correctPassword) {
+      document.body.innerHTML = "<h2 style='color:red;text-align:center;margin-top:50px;'>Prístup zamietnutý ❌</h2>";
+      throw new Error("Nesprávne heslo");
+    }
+
     // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyCf1STUPCcqzuTefIgo2Rca49vpNJY4",
