@@ -36,6 +36,13 @@
       <button class="export-btn" onclick="exportCSV()">📥 Exportovať do CSV</button>
       <button class="refresh-btn" onclick="loadReservations()">🔄 Refresh</button>
       <input type="date" id="filterDate" class="filter-date" onchange="applyDateFilter()">
+      <div id="superAdminPanel" style="display:none; margin-top:10px;">
+  <input type="email" id="adminEmail" placeholder="Email užívateľa"
+         style="padding:8px; border-radius:6px; border:none; width:200px;">
+  <button onclick="addAdmin()" style="background:green; padding:8px; border:none; border-radius:6px; color:#fff;">➕ Pridať admina</button>
+  <button onclick="removeAdmin()" style="background:red; padding:8px; border:none; border-radius:6px; color:#fff;">❌ Odobrať admina</button>
+</div>
+
       <div>
         <button id="modeDual" class="mode-btn" onclick="setSportMode('dual')">Dual</button>
         <button id="modeLyze" class="mode-btn" onclick="setSportMode('lyze')">Lyže</button>
@@ -61,11 +68,41 @@
   </div>
 
   <script>
-    // Ochrana heslom
-    const password = prompt("Zadajte heslo pre vstup:");
-    if (password !== "tajneheslo") {
-      document.body.innerHTML = "<h2 style='color:red;text-align:center;margin-top:50px;'>Nesprávne heslo!</h2>";
-      throw new Error("Neplatný prístup");
+   // Inicializácia Functions
+const functions = firebase.app().functions("europe-central2"); // alebo region kde máš Functions
+
+// Zobrazíme superadmin panel len pre superadmina
+firebase.auth().onAuthStateChanged(async user => {
+  if (user) {
+    const token = await user.getIdTokenResult();
+    if (token.claims.superadmin) {
+      document.getElementById("superAdminPanel").style.display = "block";
+    }
+  }
+});
+
+async function addAdmin() {
+  const email = document.getElementById("adminEmail").value;
+  const setAdmin = functions.httpsCallable("setAdmin");
+  try {
+    const res = await setAdmin({ email });
+    alert(res.data.message);
+  } catch (err) {
+    alert("Chyba: " + err.message);
+  }
+}
+
+async function removeAdmin() {
+  const email = document.getElementById("adminEmail").value;
+  const removeAdmin = functions.httpsCallable("removeAdmin");
+  try {
+    const res = await removeAdmin({ email });
+    alert(res.data.message);
+  } catch (err) {
+    alert("Chyba: " + err.message);
+  }
+}
+
     }
 
     // Firebase config
