@@ -4,175 +4,47 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin - Rezervácie</title>
-
-  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
-
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #111;
-      color: #fff;
-      margin: 0;
-      padding: 0;
-    }
-
-    h1 {
-      text-align: center;
-      padding: 20px;
-      background: #000;
-      margin: 0;
-    }
-
-    .container {
-      max-width: 1100px;
-      margin: auto;
-      padding: 20px;
-    }
-
-    .filters {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-
-    @media(min-width: 600px) {
-      .filters {
-        flex-direction: row;
-        justify-content: space-between;
-      }
-    }
-
-    input, select, button, textarea {
-      padding: 10px;
-      border-radius: 8px;
-      border: none;
-      background: #222;
-      color: #fff;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background: #333;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 15px;
-    }
-
-    th, td {
-      padding: 12px;
-      border-bottom: 1px solid #333;
-      text-align: left;
-      vertical-align: middle;
-    }
-
-    th {
-      background: #222;
-    }
-
-    tr:hover {
-      background: #1e1e1e;
-    }
-
-    .delete-btn {
-      background: red;
-      border: none;
-      padding: 8px 12px;
-      border-radius: 6px;
-      color: #fff;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    .export-btn {
-      background: green;
-      margin-left: 10px;
-    }
-
-    .save-btn {
-      background: dodgerblue;
-      margin-left: 5px;
-    }
-
-    .action-group {
-      display: flex;
-      gap: 5px;
-    }
-
-    .no-data {
-      text-align: center;
-      padding: 20px;
-      color: #aaa;
-    }
-
-    .note-input {
-      width: 100%;
-      resize: vertical;
-      min-height: 40px;
-    }
+    body { font-family: Arial, sans-serif; background: #000; color: #fff; margin: 0; padding: 0; }
+    h1 { text-align: center; padding: 20px; }
+    .container { padding: 15px; max-width: 1000px; margin: auto; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { padding: 10px; border: 1px solid #444; text-align: left; }
+    th { background: #111; }
+    tr:nth-child(even) { background: #1a1a1a; }
+    .admin-actions { display: flex; gap: 10px; }
+    .admin-actions button { flex: 1; padding: 8px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+    .delete-btn { background: red; color: #fff; }
+    .save-btn { background: #0a84ff; color: #fff; }
+    textarea { width: 100%; background: #222; color: #fff; border: none; border-radius: 6px; padding: 6px; }
+    .export-btn { margin-top: 20px; padding: 12px; background: green; border: none; border-radius: 12px; color: #fff; font-weight: bold; cursor: pointer; }
   </style>
 </head>
 <body>
-  <h1>📋 Admin - Rezervácie</h1>
+  <h1>Admin - Rezervácie</h1>
   <div class="container">
-
-    <!-- Filtre -->
-    <div class="filters">
-      <div>
-        <label for="filterDate">Dátum</label><br>
-        <input type="date" id="filterDate">
-      </div>
-      <div>
-        <label for="filterSport">Typ lekcie</label><br>
-        <select id="filterSport">
-          <option value="">Všetko</option>
-          <option value="lyze">Lyže</option>
-          <option value="snb">Snowboard</option>
-        </select>
-      </div>
-      <div>
-        <button onclick="loadReservations()">🔄 Obnoviť</button>
-        <button class="export-btn" onclick="exportCSV()">⬇️ Export CSV</button>
-      </div>
-    </div>
-
-    <!-- Tabuľka rezervácií -->
-    <table>
+    <button class="export-btn" onclick="exportCSV()">📥 Exportovať do CSV</button>
+    <table id="reservationTable">
       <thead>
         <tr>
-          <th>Dátum</th>
-          <th>Šport</th>
           <th>Meno</th>
           <th>Telefón</th>
           <th>Email</th>
+          <th>Šport</th>
+          <th>Dátum</th>
           <th>Hodiny</th>
-          <th>Poznámka zákazníka</th>
+          <th>Poznámka</th>
           <th>Interná poznámka</th>
-          <th>Akcia</th>
+          <th>Akcie</th>
         </tr>
       </thead>
-      <tbody id="reservationTable"></tbody>
+      <tbody></tbody>
     </table>
-
-    <div id="noData" class="no-data" style="display:none;">Žiadne rezervácie</div>
   </div>
 
   <script>
-    // 🔒 jednoduchá ochrana heslom
-    (function() {
-      const pwd = prompt("Zadajte heslo pre prístup do adminu:");
-      if (pwd !== "tajneheslo") {
-        alert("Nesprávne heslo!");
-        document.body.innerHTML = "<h2 style='color:red; text-align:center; margin-top:50px;'>❌ Prístup zamietnutý</h2>";
-        throw new Error("Unauthorized");
-      }
-    })();
-
     // Firebase config
     const firebaseConfig = {
       apiKey: "AIzaSyCf1STUPCcqzuTefIgo2Rca49vpNJY4",
@@ -183,81 +55,47 @@
       appId: "1:59575233692:web:c84584d064fc8a79db59",
       measurementId: "G-KRT4ECRERK"
     };
-
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    const reservationTable = document.getElementById("reservationTable");
-    const noDataDiv = document.getElementById("noData");
+    const tableBody = document.querySelector("#reservationTable tbody");
 
-    let lastSnapshot = []; // uloží posledne načítané dáta (na export)
-
-    // načítanie rezervácií
     async function loadReservations() {
-      reservationTable.innerHTML = "";
-      noDataDiv.style.display = "none";
-      lastSnapshot = [];
-
-      let query = db.collection("rezervacie");
-
-      const filterDate = document.getElementById("filterDate").value;
-      const filterSport = document.getElementById("filterSport").value;
-
-      if (filterDate) {
-        query = query.where("date", "==", filterDate);
-      }
-      if (filterSport) {
-        query = query.where("sport", "==", filterSport);
-      }
-
-      const snapshot = await query.get();
-
-      if (snapshot.empty) {
-        noDataDiv.style.display = "block";
-        return;
-      }
-
+      const snapshot = await db.collection("rezervacie").orderBy("createdAt", "desc").get();
+      tableBody.innerHTML = "";
       snapshot.forEach(doc => {
         const data = doc.data();
-        lastSnapshot.push({ id: doc.id, ...data });
-      });
-
-      // 🔄 zoradenie podľa času vytvorenia (najnovšie hore)
-      lastSnapshot.sort((a, b) => {
-        return (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0);
-      });
-
-      // vykreslenie tabuľky
-      lastSnapshot.forEach(res => {
         const tr = document.createElement("tr");
+
         tr.innerHTML = `
-          <td>${res.date}</td>
-          <td>${res.sport}</td>
-          <td>${res.name}</td>
-          <td>${res.phone}</td>
-          <td>${res.email}</td>
-          <td>${(res.slots || []).join(", ")}</td>
-          <td>${res.customerNote || ""}</td>
+          <td>${data.name}</td>
+          <td>${data.phone}</td>
+          <td>${data.email}</td>
+          <td>${data.sport}</td>
+          <td>${data.date}</td>
+          <td>${(data.slots || []).join(", ")}</td>
+          <td>${data.note || ""}</td>
           <td>
-            <textarea class="note-input" id="note-${res.id}">${res.adminNote || ""}</textarea>
+            <textarea data-id="${doc.id}" class="adminNote">${data.adminNote || ""}</textarea>
           </td>
-          <td class="action-group">
-            <button class="save-btn" onclick="saveNote('${res.id}')">💾</button>
-            <button class="delete-btn" onclick="deleteReservation('${res.id}')">❌</button>
+          <td>
+            <div class="admin-actions">
+              <button class="save-btn" onclick="saveAdminNote('${doc.id}')">💾 Uložiť</button>
+              <button class="delete-btn" onclick="deleteReservation('${doc.id}')">❌ Vymazať</button>
+            </div>
           </td>
         `;
-        reservationTable.appendChild(tr);
+        tableBody.appendChild(tr);
       });
     }
 
-    // uloženie internej poznámky
-    async function saveNote(id) {
-      const noteValue = document.getElementById("note-" + id).value;
-      await db.collection("rezervacie").doc(id).update({ adminNote: noteValue });
-      alert("✅ Interná poznámka uložená!");
+    async function saveAdminNote(id) {
+      const textarea = document.querySelector(`textarea[data-id='${id}']`);
+      const value = textarea.value;
+      await db.collection("rezervacie").doc(id).update({ adminNote: value });
+      alert("Interná poznámka uložená!");
     }
 
-    // vymazanie rezervácie
     async function deleteReservation(id) {
       if (confirm("Naozaj chcete vymazať túto rezerváciu?")) {
         await db.collection("rezervacie").doc(id).delete();
@@ -265,31 +103,21 @@
       }
     }
 
-    // export do CSV
-    function exportCSV() {
-      if (lastSnapshot.length === 0) {
-        alert("Žiadne dáta na export!");
-        return;
-      }
-
-      let csvContent = "data:text/csv;charset=utf-8,";
-      csvContent += "Dátum;Šport;Meno;Telefón;Email;Hodiny;Poznámka zákazníka;Interná poznámka\n";
-
-      lastSnapshot.forEach(res => {
-        csvContent += `${res.date};${res.sport};${res.name};${res.phone};${res.email};"${(res.slots || []).join(", ")}";${res.customerNote || ""};${res.adminNote || ""}\n`;
+    async function exportCSV() {
+      const snapshot = await db.collection("rezervacie").orderBy("createdAt", "desc").get();
+      let csv = "Meno;Telefón;Email;Šport;Dátum;Hodiny;Poznámka;Interná poznámka\n";
+      snapshot.forEach(doc => {
+        const d = doc.data();
+        csv += `"${d.name}";"${d.phone}";"${d.email}";"${d.sport}";"${d.date}";"${(d.slots||[]).join(", ")}";"${d.note||""}";"${d.adminNote||""}"\n`;
       });
-
-      const encodedUri = encodeURI(csvContent);
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
       const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
-      link.setAttribute("download", "rezervacie.csv");
-      document.body.appendChild(link);
+      link.href = URL.createObjectURL(blob);
+      link.download = "rezervacie.csv";
       link.click();
-      document.body.removeChild(link);
     }
 
-    // načítať po otvorení
-    window.onload = loadReservations;
+    loadReservations();
   </script>
 </body>
 </html>
