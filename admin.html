@@ -9,11 +9,12 @@
   <style>
     body { font-family: Arial, sans-serif; background: #000; color: #fff; margin: 0; padding: 0; }
     h1 { text-align: center; padding: 20px; }
-    .container { padding: 15px; max-width: 1000px; margin: auto; }
-    .top-actions { display: flex; gap: 10px; margin-bottom: 15px; }
-    .top-actions button { flex: 1; padding: 12px; border: none; border-radius: 12px; color: #fff; font-weight: bold; cursor: pointer; }
+    .container { padding: 15px; max-width: 1100px; margin: auto; }
+    .top-actions { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+    .top-actions button { padding: 12px; border: none; border-radius: 12px; color: #fff; font-weight: bold; cursor: pointer; }
     .export-btn { background: green; }
     .refresh-btn { background: #0a84ff; }
+    .filter-date { background: #222; color: #fff; padding: 10px; border: none; border-radius: 10px; }
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
     th, td { padding: 10px; border: 1px solid #444; text-align: left; }
     th { background: #111; }
@@ -31,6 +32,7 @@
     <div class="top-actions">
       <button class="export-btn" onclick="exportCSV()">📥 Exportovať do CSV</button>
       <button class="refresh-btn" onclick="loadReservations()">🔄 Refresh</button>
+      <input type="date" id="filterDate" class="filter-date" onchange="applyDateFilter()">
     </div>
     <table id="reservationTable">
       <thead>
@@ -73,13 +75,14 @@
 
     const tableBody = document.querySelector("#reservationTable tbody");
 
-    async function loadReservations() {
+    async function loadReservations(filter = null) {
       const snapshot = await db.collection("rezervacie").orderBy("createdAt", "desc").get();
       tableBody.innerHTML = "";
       snapshot.forEach(doc => {
         const data = doc.data();
-        const tr = document.createElement("tr");
+        if (filter && data.date !== filter) return; // filtrovanie podľa dátumu
 
+        const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${data.name}</td>
           <td>${data.phone}</td>
@@ -100,6 +103,15 @@
         `;
         tableBody.appendChild(tr);
       });
+    }
+
+    function applyDateFilter() {
+      const selectedDate = document.getElementById("filterDate").value;
+      if (selectedDate) {
+        loadReservations(selectedDate);
+      } else {
+        loadReservations(); // keď vymažeš filter, načíta všetko
+      }
     }
 
     async function saveAdminNote(id) {
