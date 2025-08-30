@@ -36,6 +36,10 @@
     .admin-link { text-align: center; margin: 30px 0; font-size: 12px; }
     .admin-link a { color: #555; text-decoration: none; }
     .admin-link a:hover { color: #aaa; }
+
+    /* nové - pre admin tlačidlá vedľa seba */
+    .admin-actions { display: flex; gap: 10px; margin-top: 10px; }
+    .admin-actions button { flex: 1; margin-top: 0; }
   </style>
 </head>
 <body>
@@ -78,6 +82,8 @@
       <input type="email" id="email">
       <label>Poznámka</label>
       <textarea id="note"></textarea>
+      <label>Interná poznámka (iba pre admina)</label>
+      <textarea id="adminNote"></textarea>
       <button id="submitReservation">📌 Rezervovať vybraté hodiny</button>
       <div class="cennik-btn" id="openCennik">📋 Cenník</div>
     </div>
@@ -167,6 +173,7 @@
       const phone = document.getElementById("phone").value;
       const email = document.getElementById("email").value;
       const note = document.getElementById("note").value;
+      const adminNote = document.getElementById("adminNote").value;
       const date = dateInput.value;
       const sport = sportSelect.value;
 
@@ -198,7 +205,7 @@
 
       // Uloženie iba 1x
       await db.collection("rezervacie").add({
-        name, phone, email, note, date, sport,
+        name, phone, email, note, adminNote, date, sport,
         slots: selectedSlots,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
