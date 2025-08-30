@@ -125,6 +125,7 @@
 
     function renderSlots(bookedSlots=[]) {
       timeGrid.innerHTML = "";
+      selectedSlots = []; // 🔒 vždy reset pri vykreslení
       times.forEach(time => {
         const div = document.createElement("div");
         div.classList.add("time-slot");
@@ -200,13 +201,19 @@
       // Uloženie iba 1x, adminNote prázdny
       await db.collection("rezervacie").add({
         name, phone, email, note,
-        adminNote: "", // 🔒 rezervácia od zákazníka nemá admin poznámku
+        adminNote: "",
         date, sport,
-        slots: selectedSlots,
+        slots: [...selectedSlots], // 🔒 iba aktuálny výber
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
 
       alert("Rezervácia úspešná!");
+
+      // 🔒 reset po úspešnom odoslaní
+      document.getElementById("name").value = "";
+      document.getElementById("phone").value = "";
+      document.getElementById("email").value = "";
+      document.getElementById("note").value = "";
       selectedSlots = [];
       loadReservations();
     });
