@@ -36,8 +36,6 @@
     .admin-link { text-align: center; margin: 30px 0; font-size: 12px; }
     .admin-link a { color: #555; text-decoration: none; }
     .admin-link a:hover { color: #aaa; }
-    .mode-label { font-size: 13px; color:#bbb; margin-bottom:4px; display:block; }
-    .mode-status { font-weight:bold; color:#0af; }
   </style>
 </head>
 <body>
@@ -50,8 +48,8 @@
         <label for="date">Dátum</label>
         <input type="date" id="date">
       </div>
-      <div>
-        <label class="mode-label">Typ lekcie (<span id="modeStatus" class="mode-status">Načítavam...</span>)</label>
+      <div id="sportContainer">
+        <label for="sport">Typ lekcie</label>
         <select id="sport">
           <option value="lyze">Lyže</option>
           <option value="snb">Snowboard</option>
@@ -122,35 +120,9 @@
     const timeGrid = document.getElementById("timeGrid");
     const dateInput = document.getElementById("date");
     const sportSelect = document.getElementById("sport");
-    const modeStatus = document.getElementById("modeStatus");
+    const sportContainer = document.getElementById("sportContainer");
     let selectedSlots = [];
-    let sportMode = "dual"; // default
-
-    // Načíta mód športu z Firestore
-    async function loadSportMode() {
-      const doc = await db.collection("config").doc("sportMode").get();
-      if (doc.exists) {
-        sportMode = doc.data().mode || "dual";
-      } else {
-        sportMode = "dual";
-      }
-      applySportMode();
-    }
-
-    function applySportMode() {
-      if (sportMode === "dual") {
-        sportSelect.style.display = "block";
-        modeStatus.textContent = "Dual (Lyže / Snowboard)";
-      } else if (sportMode === "lyze") {
-        sportSelect.style.display = "none";
-        sportSelect.value = "lyze";
-        modeStatus.textContent = "Len Lyže";
-      } else if (sportMode === "snb") {
-        sportSelect.style.display = "none";
-        sportSelect.value = "snb";
-        modeStatus.textContent = "Len Snowboard";
-      }
-    }
+    let globalSportMode = "dual";
 
     function renderSlots(bookedSlots=[]) {
       timeGrid.innerHTML = "";
@@ -180,14 +152,26 @@
     async function loadReservations() {
       const date = dateInput.value;
       if (!date) return;
-      const snapshot = await db.collection("rezervacie")
-        .where("date", "==", date)
-        .get();
+      const snapshot = await db.collection("rezervacie").where("date", "==", date).get();
       let booked = [];
-      snapshot.forEach(doc => {
-        booked = booked.concat(doc.data().slots || []);
-      });
+      snapshot.forEach(doc => { booked = booked.concat(doc.data().slots || []); });
       renderSlots(booked);
+    }
+
+    async function loadSportMode() {
+      const docSnap = await db.collection("settings").doc("sportMode").get();
+      if (docSnap.exists) {
+        globalSportMode = docSnap.data().mode || "dual";
+      } else {
+        globalSportMode = "dual";
+      }
+
+      if (globalSportMode === "dual") {
+        sportContainer.style.display = "block";
+      } else {
+        sportContainer.style.display = "none";
+        sportSelect.value = globalSportMode;
+      }
     }
 
     dateInput.addEventListener("change", loadReservations);
@@ -199,7 +183,11 @@
       const email = document.getElementById("email").value;
       const note = document.getElementById("note").value;
       const date = dateInput.value;
-      const sport = sportSelect.value;
+      let sport = sportSelect.value;
+
+      if (globalSportMode !== "dual") {
+        sport = globalSportMode;
+      }
 
       if (!name || !phone || !email || selectedSlots.length === 0) {
         alert("Vyplňte všetky údaje a vyberte hodiny.");
@@ -214,9 +202,7 @@
         return;
       }
 
-      const existing = await db.collection("rezervacie")
-        .where("date", "==", date)
-        .get();
+      const existing = await db.collection("rezervacie").where("date", "==", date).get();
       let booked = [];
       existing.forEach(doc => booked = booked.concat(doc.data().slots || []));
       const conflict = selectedSlots.some(slot => booked.includes(slot));
@@ -234,7 +220,6 @@
       });
 
       alert("Rezervácia úspešná!");
-
       document.getElementById("name").value = "";
       document.getElementById("phone").value = "";
       document.getElementById("email").value = "";
@@ -244,8 +229,8 @@
     });
 
     dateInput.valueAsDate = new Date();
-    loadReservations();
-    loadSportMode();
+
+    loadSportMode().then(loadReservations);
 
     // === Popup logika pre cenník ===
     const modal = document.getElementById("cennikModal");
