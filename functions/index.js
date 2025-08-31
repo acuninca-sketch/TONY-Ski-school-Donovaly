@@ -10,10 +10,10 @@ const SUPERADMIN_UID = "qVb759slUae8j0rAsnqGxd2SZG72";
 /**
  * Inicializácia superadmina pri deployi
  */
-exports.initSuperAdmin = functions.runWith({ memory: "128MB", timeoutSeconds: 60 }).https.onRequest(async (req, res) => {
+exports.initSuperAdmin = functions.https.onCall(async (data, context) => {
   try {
     // Nastavenie custom claim
-    await admin.auth().setCustomUserClaims(SUPERADMIN_UID, { superadmin: true });
+    await admin.auth().setCustomUserClaims(SUPERADMIN_UID, { superadmin: true, admin: true });
 
     // Zápis do kolekcie roles
     await db.collection("roles").doc(SUPERADMIN_UID).set({
@@ -21,10 +21,10 @@ exports.initSuperAdmin = functions.runWith({ memory: "128MB", timeoutSeconds: 60
       createdAt: admin.firestore.FieldValue.serverTimestamp()
     });
 
-    res.send("Superadmin úspešne inicializovaný 🚀");
+    return { message: "Superadmin úspešne inicializovaný 🚀" };
   } catch (err) {
     console.error(err);
-    res.status(500).send("Chyba pri inicializácii superadmina");
+    throw new functions.https.HttpsError("internal", "Chyba pri inicializácii superadmina");
   }
 });
 
@@ -71,4 +71,20 @@ exports.removeAdmin = functions.https.onCall(async (data, context) => {
   await db.collection("roles").doc(adminUid).delete();
 
   return { message: `Používateľ ${adminUid} už nie je admin.` };
+});
+
+/**
+ * Nastavenie športového režimu – môže volať len admin
+ */
+exports.setSportMode = functions.https.onCall(async (data, context) => {
+  if (!context.auth || !context.auth.token.admin) {
+    throw new functions.https.HttpsError("permission-denied", "Len admin môže meniť športový režim.");
+  }
+
+  await db.collection("settings").doc("sportAvailability").set({
+    mode: data.mode,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+  });
+
+  return { message: "Režim nastavený na: " + data.mode };
 });
