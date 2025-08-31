@@ -4,6 +4,8 @@ const admin = require("firebase-admin");
 admin.initializeApp();
 const auth = admin.auth();
 
+// ========== ADMIN MANAGEMENT ==========
+
 // Callable Function – pridať admina
 exports.setAdmin = functions.https.onCall(async (data, context) => {
   // Kontrola, či volajúci má superadmin claim
@@ -45,32 +47,41 @@ exports.removeAdmin = functions.https.onCall(async (data, context) => {
   try {
     const user = await auth.getUserByEmail(email);
     await auth.setCustomUserClaims(user.uid, { admin: false });
-    return { message: `Používateľ ${email} už NIE JE admin.` };
+    return { message: `Používateľ ${email} už nie je ADMIN.` };
   } catch (error) {
     throw new functions.https.HttpsError("not-found", error.message);
   }
 });
 
-// Callable Function – nastaviť superadmina (použi raz manuálne)
-exports.setSuperadmin = functions.https.onCall(async (data, context) => {
-  // Sem daj podmienku, aby to mohol spraviť iba ty, napr. podľa UID alebo e-mailu
-  if (!context.auth || context.auth.token.email !== "tvoj@superadmin.sk") {
+// ========== SPORT MODE MANAGEMENT ==========
+
+// Callable Function – nastaviť športový režim
+exports.setSportMode = functions.https.onCall(async (data, context) => {
+  // kontrola, či je prihlásený admin
+  if (!context.auth || !context.auth.token.admin) {
     throw new functions.https.HttpsError(
       "permission-denied",
-      "Len zakladateľ môže nastaviť superadmina."
+      "Nemáš oprávnenie meniť športový režim."
     );
   }
 
-  const email = data.email;
-  if (!email) {
-    throw new functions.https.HttpsError("invalid-argument", "Email je povinný.");
+  const mode = data.mode;
+  if (!["dual", "lyze", "snb"].includes(mode)) {
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "Neplatný režim. Povolené hodnoty: dual, lyze, snb."
+    );
   }
 
   try {
-    const user = await auth.getUserByEmail(email);
-    await auth.setCustomUserClaims(user.uid, { superadmin: true, admin: true });
-    return { message: `Používateľ ${email} bol nastavený ako SUPERADMIN.` };
+    await admin.firestore().collection("settings").doc("sportAvailability").set({
+      mode: mode,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    return { message: `Režim nastavený na ${mode}` };
   } catch (error) {
-    throw new functions.https.HttpsError("not-found", error.message);
+    throw new functions.https.HttpsError("internal", error.message);
   }
+});
+
 });
