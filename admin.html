@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="sk">
 <head>
@@ -7,6 +6,8 @@
   <title>Admin - Rezervácie</title>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
   <style>
     body { font-family: Arial, sans-serif; background: #000; color: #fff; margin: 0; padding: 0; }
     h1 { text-align: center; padding: 20px; }
@@ -27,6 +28,11 @@
     .delete-btn { background: red; color: #fff; }
     .save-btn { background: #0a84ff; color: #fff; }
     textarea { width: 100%; background: #222; color: #fff; border: none; border-radius: 6px; padding: 6px; }
+    #superAdminPanel { margin-top: 10px; display:none; }
+    #superAdminPanel input { padding:8px; border-radius:6px; border:none; width:200px; }
+    #superAdminPanel button { padding:8px; border:none; border-radius:6px; color:#fff; font-weight:bold; margin-left:5px; }
+    #superAdminPanel .add { background:green; }
+    #superAdminPanel .remove { background:red; }
   </style>
 </head>
 <body>
@@ -36,19 +42,20 @@
       <button class="export-btn" onclick="exportCSV()">📥 Exportovať do CSV</button>
       <button class="refresh-btn" onclick="loadReservations()">🔄 Refresh</button>
       <input type="date" id="filterDate" class="filter-date" onchange="applyDateFilter()">
-      <div id="superAdminPanel" style="display:none; margin-top:10px;">
-  <input type="email" id="adminEmail" placeholder="Email užívateľa"
-         style="padding:8px; border-radius:6px; border:none; width:200px;">
-  <button onclick="addAdmin()" style="background:green; padding:8px; border:none; border-radius:6px; color:#fff;">➕ Pridať admina</button>
-  <button onclick="removeAdmin()" style="background:red; padding:8px; border:none; border-radius:6px; color:#fff;">❌ Odobrať admina</button>
-</div>
-
       <div>
         <button id="modeDual" class="mode-btn" onclick="setSportMode('dual')">Dual</button>
         <button id="modeLyze" class="mode-btn" onclick="setSportMode('lyze')">Lyže</button>
         <button id="modeSnb" class="mode-btn" onclick="setSportMode('snb')">SNB</button>
       </div>
     </div>
+
+    <!-- Superadmin panel -->
+    <div id="superAdminPanel">
+      <input type="email" id="adminEmail" placeholder="Email užívateľa">
+      <button class="add" onclick="addAdmin()">➕ Pridať admina</button>
+      <button class="remove" onclick="removeAdmin()">❌ Odobrať admina</button>
+    </div>
+
     <table id="reservationTable">
       <thead>
         <tr>
@@ -68,41 +75,11 @@
   </div>
 
   <script>
-   // Inicializácia Functions
-const functions = firebase.app().functions("europe-central2"); // alebo region kde máš Functions
-
-// Zobrazíme superadmin panel len pre superadmina
-firebase.auth().onAuthStateChanged(async user => {
-  if (user) {
-    const token = await user.getIdTokenResult();
-    if (token.claims.superadmin) {
-      document.getElementById("superAdminPanel").style.display = "block";
-    }
-  }
-});
-
-async function addAdmin() {
-  const email = document.getElementById("adminEmail").value;
-  const setAdmin = functions.httpsCallable("setAdmin");
-  try {
-    const res = await setAdmin({ email });
-    alert(res.data.message);
-  } catch (err) {
-    alert("Chyba: " + err.message);
-  }
-}
-
-async function removeAdmin() {
-  const email = document.getElementById("adminEmail").value;
-  const removeAdmin = functions.httpsCallable("removeAdmin");
-  try {
-    const res = await removeAdmin({ email });
-    alert(res.data.message);
-  } catch (err) {
-    alert("Chyba: " + err.message);
-  }
-}
-
+    // Ochrana heslom (pôvodný prompt, môžeš neskôr nahradiť Firebase Auth loginom)
+    const password = prompt("Zadajte heslo pre vstup:");
+    if (password !== "tajneheslo") {
+      document.body.innerHTML = "<h2 style='color:red;text-align:center;margin-top:50px;'>Nesprávne heslo!</h2>";
+      throw new Error("Neplatný prístup");
     }
 
     // Firebase config
@@ -117,6 +94,7 @@ async function removeAdmin() {
     };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+    const functions = firebase.app().functions("europe-central2"); // nastav region podľa potreby
 
     const tableBody = document.querySelector("#reservationTable tbody");
 
@@ -187,9 +165,7 @@ async function removeAdmin() {
 
     // Prepínače športového režimu
     async function setSportMode(mode) {
-      await db.collection("settings").doc("sportMode").set({
-        mode: mode,
-      });
+      await db.collection("settings").doc("sportAvailability").set({ mode: mode });
       updateModeButtons(mode);
       alert("Režim športu nastavený na: " + mode);
     }
@@ -204,11 +180,43 @@ async function removeAdmin() {
     }
 
     async function loadSportMode() {
-      const docRef = await db.collection("settings").doc("sportMode").get();
+      const docRef = await db.collection("settings").doc("sportAvailability").get();
       if (docRef.exists) {
         updateModeButtons(docRef.data().mode);
       } else {
         updateModeButtons("dual");
+      }
+    }
+
+    // Superadmin panel
+    firebase.auth().onAuthStateChanged(async user => {
+      if (user) {
+        const token = await user.getIdTokenResult();
+        if (token.claims.superadmin) {
+          document.getElementById("superAdminPanel").style.display = "block";
+        }
+      }
+    });
+
+    async function addAdmin() {
+      const email = document.getElementById("adminEmail").value;
+      const setAdmin = functions.httpsCallable("setAdmin");
+      try {
+        const res = await setAdmin({ email });
+        alert(res.data.message);
+      } catch (err) {
+        alert("Chyba: " + err.message);
+      }
+    }
+
+    async function removeAdmin() {
+      const email = document.getElementById("adminEmail").value;
+      const removeAdminFn = functions.httpsCallable("removeAdmin");
+      try {
+        const res = await removeAdminFn({ email });
+        alert(res.data.message);
+      } catch (err) {
+        alert("Chyba: " + err.message);
       }
     }
 
