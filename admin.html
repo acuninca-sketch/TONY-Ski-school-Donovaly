@@ -13,16 +13,16 @@
 <body>
   <h1>Admin - Rezervácie</h1>
 
-  <!-- LOGIN FORM -->
-  <div id="loginBox" style="margin-bottom:20px; border:1px solid #ccc; padding:10px; border-radius:10px;">
-    <h3>Prihlásenie</h3>
-    <input type="email" id="email" placeholder="Email"><br><br>
-    <input type="password" id="password" placeholder="Heslo"><br><br>
-    <button onclick="login()">Prihlásiť sa</button>
-    <p id="loginMessage" style="color:red;"></p>
+  <!-- Login panel -->
+  <div id="loginPanel" style="margin-bottom:20px;">
+    <input type="email" id="email" placeholder="Email" />
+    <input type="password" id="password" placeholder="Heslo" />
+    <button onclick="login()">Prihlásiť</button>
+    <button onclick="logout()">Odhlásiť</button>
+    <p id="loginStatus"></p>
   </div>
 
-  <!-- HLAVNÝ OBSAH ADMINA -->
+  <!-- Sekcia viditeľná len pre adminov -->
   <div id="adminContent" style="display:none;">
 
     <!-- Ovládanie športového režimu -->
@@ -55,15 +55,14 @@
     <button onclick="exportCSV()">Exportovať do CSV</button>
     <button onclick="location.reload()">🔄 Refresh</button>
 
-    <!-- LEN PRE SUPERADMINA -->
-    <div id="superadminPanel" style="display:none; margin-top:30px; padding:10px; border:1px solid red; border-radius:10px;">
-      <h3>Superadmin - správa adminov</h3>
-      <input type="email" id="newAdminEmail" placeholder="Email admina">
+    <!-- Správa adminov (len superadmin) -->
+    <div id="superAdminPanel" style="display:none; margin-top:30px; padding:10px; border:1px solid #ccc; border-radius:10px;">
+      <h3>Správa adminov</h3>
+      <input type="text" id="adminUid" placeholder="UID admina" />
       <button onclick="addAdmin()">Pridať admina</button>
       <button onclick="removeAdmin()">Odobrať admina</button>
-      <p id="adminMessage" style="color:green;"></p>
+      <p id="adminMsg"></p>
     </div>
-
   </div>
 
   <script>
@@ -78,55 +77,80 @@
     const auth = firebase.auth();
     const functions = firebase.functions();
 
-    let currentUserRole = null;
+    // ====== AUTH ======
+    auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        const token = await user.getIdTokenResult();
+        const claims = token.claims;
 
-    // LOGIN
-    async function login() {
+        document.getElementById("loginStatus").innerText =
+          "Prihlásený: " + user.email;
+
+        if (claims.admin || claims.superadmin) {
+          document.getElementById("adminContent").style.display = "block";
+          loadCurrentMode();
+          renderReservations();
+        } else {
+          document.getElementById("loginStatus").innerText +=
+            " (nemáš admin práva)";
+          document.getElementById("adminContent").style.display = "none";
+        }
+
+        if (claims.superadmin) {
+          document.getElementById("superAdminPanel").style.display = "block";
+        }
+      } else {
+        document.getElementById("loginStatus").innerText = "Odhlásený";
+        document.getElementById("adminContent").style.display = "none";
+      }
+    });
+
+    function login() {
       const email = document.getElementById("email").value;
       const password = document.getElementById("password").value;
+      auth.signInWithEmailAndPassword(email, password).catch((err) =>
+        alert("Chyba: " + err.message)
+      );
+    }
+
+    function logout() {
+      auth.signOut();
+    }
+
+    // ====== SPRÁVA ADMINOV ======
+    async function addAdmin() {
+      const adminUid = document.getElementById("adminUid").value;
       try {
-        const userCred = await auth.signInWithEmailAndPassword(email, password);
-        const uid = userCred.user.uid;
-        const roleDoc = await db.collection("roles").doc(uid).get();
-        if (!roleDoc.exists) {
-          document.getElementById("loginMessage").innerText = "Nemáš oprávnenie.";
-          return;
-        }
-        currentUserRole = roleDoc.data().role;
-        document.getElementById("loginBox").style.display = "none";
-        document.getElementById("adminContent").style.display = "block";
-        if (currentUserRole === "superadmin") {
-          document.getElementById("superadminPanel").style.display = "block";
-        }
-        loadCurrentMode();
-        renderReservations();
+        const fn = firebase.functions().httpsCallable("addAdmin");
+        const res = await fn({ adminUid });
+        document.getElementById("adminMsg").innerText = res.data.message;
       } catch (err) {
-        document.getElementById("loginMessage").innerText = "Chyba: " + err.message;
+        document.getElementById("adminMsg").innerText = "Chyba: " + err.message;
       }
     }
 
-    // ====== SUPERADMIN SPRÁVA ADMINOV ======
-    async function addAdmin() {
-  const email = document.getElementById("newAdminEmail").value;
-  try {
-    const fn = firebase.functions().httpsCallable("addAdmin");
-    const res = await fn({ email });
-    document.getElementById("adminMessage").innerText = res.data.message;
-  } catch (err) {
-    document.getElementById("adminMessage").innerText = "Chyba: " + err.message;
-  }
-}
+    async function removeAdmin() {
+      const adminUid = document.getElementById("adminUid").value;
+      try {
+        const fn = firebase.functions().httpsCallable("removeAdmin");
+        const res = await fn({ adminUid });
+        document.getElementById("adminMsg").innerText = res.data.message;
+      } catch (err) {
+        document.getElementById("adminMsg").innerText = "Chyba: " + err.message;
+      }
+    }
 
-async function removeAdmin() {
-  const email = document.getElementById("newAdminEmail").value;
-  try {
-    const fn = firebase.functions().httpsCallable("removeAdmin");
-    const res = await fn({ email });
-    document.getElementById("adminMessage").innerText = res.data.message;
-  } catch (err) {
-    document.getElementById("adminMessage").innerText = "Chyba: " + err.message;
-  }
-}
+    // ====== SPORT MODE ======
+    async function setSportMode(mode) {
+      try {
+        const setMode = firebase.functions().httpsCallable("setSportMode");
+        const res = await setMode({ mode });
+        alert(res.data.message);
+        loadCurrentMode();
+      } catch (err) {
+        alert("Chyba: " + err.message);
+      }
+    }
 
     async function loadCurrentMode() {
       const doc = await db.collection("settings").doc("sportAvailability").get();
@@ -202,4 +226,3 @@ async function removeAdmin() {
   </script>
 </body>
 </html>
-
