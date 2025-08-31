@@ -107,37 +107,26 @@
 
     // ====== SUPERADMIN SPRÁVA ADMINOV ======
     async function addAdmin() {
-      const email = document.getElementById("newAdminEmail").value;
-      try {
-        // nájdeme UID podľa emailu
-        const user = await auth.fetchSignInMethodsForEmail(email);
-        if (user.length === 0) {
-          document.getElementById("adminMessage").innerText = "Používateľ neexistuje.";
-          return;
-        }
-        // UID získame manuálne (cez Firebase Admin SDK - v praxi cloud function)
-        // Pre jednoduchú ukážku pridáme len placeholder
-        document.getElementById("adminMessage").innerText = "UID používateľa treba doplniť cez server/admin SDK!";
-      } catch (err) {
-        document.getElementById("adminMessage").innerText = "Chyba: " + err.message;
-      }
-    }
+  const email = document.getElementById("newAdminEmail").value;
+  try {
+    const fn = firebase.functions().httpsCallable("addAdmin");
+    const res = await fn({ email });
+    document.getElementById("adminMessage").innerText = res.data.message;
+  } catch (err) {
+    document.getElementById("adminMessage").innerText = "Chyba: " + err.message;
+  }
+}
 
-    async function removeAdmin() {
-      document.getElementById("adminMessage").innerText = "Odoberanie adminov funguje rovnako – cez UID v roles.";
-    }
-
-    // ====== SPORT MODE ======
-    async function setSportMode(mode) {
-      try {
-        const setMode = firebase.functions().httpsCallable("setSportMode");
-        const res = await setMode({ mode });
-        alert(res.data.message);
-        loadCurrentMode();
-      } catch (err) {
-        alert("Chyba: " + err.message);
-      }
-    }
+async function removeAdmin() {
+  const email = document.getElementById("newAdminEmail").value;
+  try {
+    const fn = firebase.functions().httpsCallable("removeAdmin");
+    const res = await fn({ email });
+    document.getElementById("adminMessage").innerText = res.data.message;
+  } catch (err) {
+    document.getElementById("adminMessage").innerText = "Chyba: " + err.message;
+  }
+}
 
     async function loadCurrentMode() {
       const doc = await db.collection("settings").doc("sportAvailability").get();
