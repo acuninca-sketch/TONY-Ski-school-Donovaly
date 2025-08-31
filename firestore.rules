@@ -1,36 +1,20 @@
-// Firestore Security Rules
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Kolekcia REZERVÁCIE
-    match /rezervacie/{docId} {
-      allow read: if request.auth != null; // čítať môžu prihlásení
-      allow write: if isAdminOrSuperadmin();
-    }
-
-    // Kolekcia SETTINGS (športový mód)
+    // Len admin/superadmin majú prístup k settings + rezervácie
     match /settings/{docId} {
-      allow read: if true; // každý môže čítať aktuálny mód
-      allow write: if isAdminOrSuperadmin();
+      allow read, write: if request.auth.token.admin == true || request.auth.token.superadmin == true;
     }
 
-    // Kolekcia ROLES
-    match /roles/{userId} {
-      allow read: if isAdminOrSuperadmin();
-      allow write: if isSuperadmin();
+    match /rezervacie/{docId} {
+      allow read, write: if request.auth.token.admin == true || request.auth.token.superadmin == true;
     }
 
-    // HELPER funkcie
-    function isSuperadmin() {
-      return request.auth != null &&
-        get(/databases/$(database)/documents/roles/$(request.auth.uid)).data.role == "superadmin";
-    }
-
-    function isAdminOrSuperadmin() {
-      return request.auth != null &&
-        (get(/databases/$(database)/documents/roles/$(request.auth.uid)).data.role == "admin" ||
-         get(/databases/$(database)/documents/roles/$(request.auth.uid)).data.role == "superadmin");
+    match /roles/{docId} {
+      // Čítanie rolí len adminom/superadminom
+      allow read: if request.auth.token.admin == true || request.auth.token.superadmin == true;
+      allow write: if request.auth.token.superadmin == true;
     }
   }
 }
