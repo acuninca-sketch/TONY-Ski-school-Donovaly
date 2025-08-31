@@ -158,6 +158,7 @@
       renderSlots(booked);
     }
 
+    // === SPORT MODE ===
     async function loadSportMode() {
       const docSnap = await db.collection("settings").doc("sportMode").get();
       if (docSnap.exists) {
@@ -230,6 +231,7 @@
 
     dateInput.valueAsDate = new Date();
 
+    // === Načítaj nastavenia a rezervácie ===
     loadSportMode().then(loadReservations);
 
     // === Popup logika pre cenník ===
@@ -264,3 +266,4 @@
   </script>
 </body>
 </html>
+
