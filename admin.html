@@ -13,35 +13,58 @@
 <body>
   <h1>Admin - Rezervácie</h1>
 
-  <!-- Ovládanie športového režimu -->
-  <div style="margin-bottom: 20px; padding: 10px; border: 1px solid #ccc; border-radius: 10px;">
-    <h3>Športový režim</h3>
-    <p>Vyberte, ktoré športy môžu zákazníci rezervovať:</p>
-    <button onclick="setSportMode('dual')">Dual (Lyže + SNB)</button>
-    <button onclick="setSportMode('lyze')">Len Lyže</button>
-    <button onclick="setSportMode('snb')">Len SNB</button>
-    <p id="currentMode" style="margin-top:10px; font-weight: bold;">Načítavam aktuálny režim...</p>
+  <!-- LOGIN FORM -->
+  <div id="loginBox" style="margin-bottom:20px; border:1px solid #ccc; padding:10px; border-radius:10px;">
+    <h3>Prihlásenie</h3>
+    <input type="email" id="email" placeholder="Email"><br><br>
+    <input type="password" id="password" placeholder="Heslo"><br><br>
+    <button onclick="login()">Prihlásiť sa</button>
+    <p id="loginMessage" style="color:red;"></p>
   </div>
 
-  <!-- Tabuľka rezervácií -->
-  <table id="rezervacieTable" border="1" cellspacing="0" cellpadding="5">
-    <thead>
-      <tr>
-        <th>Dátum</th>
-        <th>Čas</th>
-        <th>Meno</th>
-        <th>Šport</th>
-        <th>Poznámka zákazníka</th>
-        <th>Interná poznámka</th>
-        <th>Akcie</th>
-      </tr>
-    </thead>
-    <tbody id="rezervacieBody"></tbody>
-  </table>
+  <!-- HLAVNÝ OBSAH ADMINA -->
+  <div id="adminContent" style="display:none;">
 
-  <br />
-  <button onclick="exportCSV()">Exportovať do CSV</button>
-  <button onclick="location.reload()">🔄 Refresh</button>
+    <!-- Ovládanie športového režimu -->
+    <div style="margin-bottom: 20px; padding: 10px; border: 1px solid #ccc; border-radius: 10px;">
+      <h3>Športový režim</h3>
+      <p>Vyberte, ktoré športy môžu zákazníci rezervovať:</p>
+      <button onclick="setSportMode('dual')">Dual (Lyže + SNB)</button>
+      <button onclick="setSportMode('lyze')">Len Lyže</button>
+      <button onclick="setSportMode('snb')">Len SNB</button>
+      <p id="currentMode" style="margin-top:10px; font-weight: bold;">Načítavam aktuálny režim...</p>
+    </div>
+
+    <!-- Tabuľka rezervácií -->
+    <table id="rezervacieTable" border="1" cellspacing="0" cellpadding="5">
+      <thead>
+        <tr>
+          <th>Dátum</th>
+          <th>Čas</th>
+          <th>Meno</th>
+          <th>Šport</th>
+          <th>Poznámka zákazníka</th>
+          <th>Interná poznámka</th>
+          <th>Akcie</th>
+        </tr>
+      </thead>
+      <tbody id="rezervacieBody"></tbody>
+    </table>
+
+    <br />
+    <button onclick="exportCSV()">Exportovať do CSV</button>
+    <button onclick="location.reload()">🔄 Refresh</button>
+
+    <!-- LEN PRE SUPERADMINA -->
+    <div id="superadminPanel" style="display:none; margin-top:30px; padding:10px; border:1px solid red; border-radius:10px;">
+      <h3>Superadmin - správa adminov</h3>
+      <input type="email" id="newAdminEmail" placeholder="Email admina">
+      <button onclick="addAdmin()">Pridať admina</button>
+      <button onclick="removeAdmin()">Odobrať admina</button>
+      <p id="adminMessage" style="color:green;"></p>
+    </div>
+
+  </div>
 
   <script>
     // Firebase config
@@ -52,7 +75,57 @@
     };
     const app = firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
+    const auth = firebase.auth();
     const functions = firebase.functions();
+
+    let currentUserRole = null;
+
+    // LOGIN
+    async function login() {
+      const email = document.getElementById("email").value;
+      const password = document.getElementById("password").value;
+      try {
+        const userCred = await auth.signInWithEmailAndPassword(email, password);
+        const uid = userCred.user.uid;
+        const roleDoc = await db.collection("roles").doc(uid).get();
+        if (!roleDoc.exists) {
+          document.getElementById("loginMessage").innerText = "Nemáš oprávnenie.";
+          return;
+        }
+        currentUserRole = roleDoc.data().role;
+        document.getElementById("loginBox").style.display = "none";
+        document.getElementById("adminContent").style.display = "block";
+        if (currentUserRole === "superadmin") {
+          document.getElementById("superadminPanel").style.display = "block";
+        }
+        loadCurrentMode();
+        renderReservations();
+      } catch (err) {
+        document.getElementById("loginMessage").innerText = "Chyba: " + err.message;
+      }
+    }
+
+    // ====== SUPERADMIN SPRÁVA ADMINOV ======
+    async function addAdmin() {
+      const email = document.getElementById("newAdminEmail").value;
+      try {
+        // nájdeme UID podľa emailu
+        const user = await auth.fetchSignInMethodsForEmail(email);
+        if (user.length === 0) {
+          document.getElementById("adminMessage").innerText = "Používateľ neexistuje.";
+          return;
+        }
+        // UID získame manuálne (cez Firebase Admin SDK - v praxi cloud function)
+        // Pre jednoduchú ukážku pridáme len placeholder
+        document.getElementById("adminMessage").innerText = "UID používateľa treba doplniť cez server/admin SDK!";
+      } catch (err) {
+        document.getElementById("adminMessage").innerText = "Chyba: " + err.message;
+      }
+    }
+
+    async function removeAdmin() {
+      document.getElementById("adminMessage").innerText = "Odoberanie adminov funguje rovnako – cez UID v roles.";
+    }
 
     // ====== SPORT MODE ======
     async function setSportMode(mode) {
@@ -77,8 +150,6 @@
           "Aktuálny režim: dual (predvolený)";
       }
     }
-
-    loadCurrentMode();
 
     // ====== REZERVÁCIE ======
     function renderReservations() {
@@ -139,8 +210,7 @@
         link.click();
       });
     }
-
-    renderReservations();
   </script>
 </body>
 </html>
+
