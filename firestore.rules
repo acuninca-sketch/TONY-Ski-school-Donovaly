@@ -1,0 +1,36 @@
+// Firestore Security Rules
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Kolekcia REZERVÁCIE
+    match /rezervacie/{docId} {
+      allow read: if request.auth != null; // čítať môžu prihlásení
+      allow write: if isAdminOrSuperadmin();
+    }
+
+    // Kolekcia SETTINGS (športový mód)
+    match /settings/{docId} {
+      allow read: if true; // každý môže čítať aktuálny mód
+      allow write: if isAdminOrSuperadmin();
+    }
+
+    // Kolekcia ROLES
+    match /roles/{userId} {
+      allow read: if isAdminOrSuperadmin();
+      allow write: if isSuperadmin();
+    }
+
+    // HELPER funkcie
+    function isSuperadmin() {
+      return request.auth != null &&
+        get(/databases/$(database)/documents/roles/$(request.auth.uid)).data.role == "superadmin";
+    }
+
+    function isAdminOrSuperadmin() {
+      return request.auth != null &&
+        (get(/databases/$(database)/documents/roles/$(request.auth.uid)).data.role == "admin" ||
+         get(/databases/$(database)/documents/roles/$(request.auth.uid)).data.role == "superadmin");
+    }
+  }
+}
