@@ -1,7 +1,8 @@
 {
   "name": "functions",
   "scripts": {
-    "deploy": "firebase deploy --only functions,firestore:rules"
+    "deploy": "firebase deploy --only functions,firestore:rules",
+    "lint": "echo \"No lint step configured\""
   },
   "engines": {
     "node": "18"
