@@ -15,11 +15,16 @@
         { "fieldPath": "role", "order": "ASCENDING" },
         { "fieldPath": "userId", "order": "ASCENDING" }
       ]
+    },
+    {
+      "collectionGroup": "settings",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "mode", "order": "ASCENDING" },
+        { "fieldPath": "updatedAt", "order": "DESCENDING" }
+      ]
     }
   ],
   "fieldOverrides": []
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> 262a2a841992b252496e8001713400646be61e06
+
