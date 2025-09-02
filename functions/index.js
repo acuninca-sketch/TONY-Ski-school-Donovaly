@@ -77,6 +77,7 @@ exports.addAdmin = functions.https.onCall(async (data, context) => {
   const { adminUid } = data;
   if (!adminUid) throw new functions.https.HttpsError("invalid-argument", "Chýba UID admina.");
 
+  // Nastavenie custom claim pre admina
   await admin.auth().setCustomUserClaims(adminUid, { admin: true });
   await db.collection("roles").doc(adminUid).set({
     role: "admin",
@@ -101,6 +102,7 @@ exports.removeAdmin = functions.https.onCall(async (data, context) => {
   const { adminUid } = data;
   if (!adminUid) throw new functions.https.HttpsError("invalid-argument", "Chýba UID admina.");
 
+  // Zrušenie custom claim pre admina
   await admin.auth().setCustomUserClaims(adminUid, { admin: false });
   await db.collection("roles").doc(adminUid).delete();
 
@@ -115,6 +117,7 @@ exports.setSportMode = functions.https.onCall(async (data, context) => {
     throw new functions.https.HttpsError("permission-denied", "Len admin môže meniť športový režim.");
   }
 
+  // Nastavenie športového režimu v kolekcii settings
   await db.collection("settings").doc("sportAvailability").set({
     mode: data.mode,
     updatedAt: admin.firestore.FieldValue.serverTimestamp()
