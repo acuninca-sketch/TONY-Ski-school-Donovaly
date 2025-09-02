@@ -3,7 +3,7 @@ name: Deploy to Firebase
 on:
   push:
     branches:
-      - main   # spustí sa pri pushnutí do hlavnej vetvy
+      - main   # alebo iná vetva, ktorú používaš
 
 jobs:
   deploy:
@@ -11,23 +11,21 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v3
         with:
           node-version: '18'
 
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
 
-      - name: Authenticate with Firebase
+      - name: Deploy to Firebase
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: |
-          echo "$FIREBASE_SERVICE_ACCOUNT" > ${HOME}/firebase-key.json
-          gcloud auth activate-service-account --key-file=${HOME}/firebase-key.json
-          gcloud --quiet config set project lyziarska-skola
+          echo "$FIREBASE_SERVICE_ACCOUNT" > ${HOME}/gcloud.json
+          firebase use --add lyziarska-skola
+          firebase deploy --only functions,firestore:rules --token "$(firebase login:ci --no-localhost --json < ${HOME}/gcloud.json | jq -r '.refresh_token')"
 
-      - name: Deploy to Firebase
-        run: firebase deploy --only functions,firestore:rules --token "${{ secrets.FIREBASE_TOKEN }}"
