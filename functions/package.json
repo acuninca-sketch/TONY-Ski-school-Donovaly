@@ -2,7 +2,8 @@
   "name": "functions",
   "scripts": {
     "deploy": "firebase deploy --only functions,firestore:rules",
-    "lint": "echo \"No lint step configured\""
+    "lint": "echo \"No lint step configured\"",
+    "serve": "firebase emulators:start --only functions"  // Pridané pre lokálny vývoj a testovanie
   },
   "engines": {
     "node": "18"
@@ -10,5 +11,8 @@
   "dependencies": {
     "firebase-admin": "^11.10.1",
     "firebase-functions": "^4.4.1"
+  },
+  "devDependencies": {
+    "firebase-functions-test": "^0.2.0"  // Pridané pre testovanie Firebase Functions
   }
 }
