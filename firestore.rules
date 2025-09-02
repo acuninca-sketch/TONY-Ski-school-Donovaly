@@ -2,24 +2,17 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Len admin alebo superadmin majú prístup k settings
     match /settings/{docId} {
       allow read, write: if request.auth != null && (request.auth.token.admin == true || request.auth.token.superadmin == true);
     }
 
-    // Len admin alebo superadmin majú prístup k rezerváciám
     match /rezervacie/{docId} {
       allow read, write: if request.auth != null && (request.auth.token.admin == true || request.auth.token.superadmin == true);
     }
 
-    // Kolekcia s rolami
     match /roles/{docId} {
-      // Čítanie rolí len adminom/superadminom
       allow read: if request.auth != null && (request.auth.token.admin == true || request.auth.token.superadmin == true);
-
-      // Zapisovať do rolí môže iba superadmin
       allow write: if request.auth != null && request.auth.token.superadmin == true;
     }
   }
 }
-
