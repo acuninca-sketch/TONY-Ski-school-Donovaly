@@ -41,3 +41,4 @@ jobs:
           FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
         run: |
           node functions/initSuperAdmin.js
+
