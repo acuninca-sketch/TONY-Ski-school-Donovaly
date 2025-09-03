@@ -2,3 +2,4 @@
 "$(date)" 
 "$(date)"  git add trigger.txt git commit -m "Trigger deploy workflow" git push origin main
 "$(date)" 
+"$(date)" 
