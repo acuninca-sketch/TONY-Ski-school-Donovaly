@@ -3,7 +3,7 @@ name: Deploy to Firebase
 on:
   push:
     branches:
-      - main  # alebo tvoja produkčná vetva
+      - main
 
 jobs:
   deploy:
@@ -35,13 +35,9 @@ jobs:
         run: |
           firebase deploy --only functions,firestore:rules --project lyziarska-skola
 
-      # 6️⃣ Inicializácia SuperAdmin
+      # 6️⃣ Inicializácia SuperAdmina
       - name: Initialize SuperAdmin
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/serviceAccountKey.json
         run: |
           node functions/initSuperAdmin.js
-<<<<<<< HEAD
-=======
-
->>>>>>> 56e5bc5 (Aktualizovaný Firebase deploy workflow - používa service account)
