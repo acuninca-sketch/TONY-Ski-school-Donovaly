@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout repozitár
+      # 1️⃣ Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
@@ -28,17 +28,21 @@ jobs:
       - name: Setup Firebase credentials
         run: echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" > ${{ github.workspace }}/serviceAccountKey.json
 
-      # 5️⃣ Deploy Firebase funkcií a Firestore pravidiel
+      # 5️⃣ Inštalácia závislostí pre functions
+      - name: Install Functions Dependencies
+        working-directory: functions
+        run: npm install
+
+      # 6️⃣ Deploy Firebase funkcií a Firestore pravidiel
       - name: Deploy to Firebase
         env:
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/serviceAccountKey.json
         run: |
           firebase deploy --only functions,firestore:rules --project lyziarska-skola
 
-      # 6️⃣ Inicializácia SuperAdmina
+      # 7️⃣ Inicializácia SuperAdmina
       - name: Initialize SuperAdmin
         env:
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/serviceAccountKey.json
         run: |
           node functions/initSuperAdmin.js
-
