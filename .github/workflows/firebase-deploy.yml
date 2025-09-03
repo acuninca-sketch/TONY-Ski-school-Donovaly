@@ -25,15 +25,15 @@ jobs:
         run: echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" > ${{ github.workspace }}/serviceAccountKey.json
 
       - name: Deploy to Firebase
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/serviceAccountKey.json
-        run: |
-          firebase deploy --only functions,firestore:rules --project lyziarska-skola
+  env:
+    FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+  run: |
+    firebase deploy --only functions,firestore:rules --project lyziarska-skola
 
-      - name: Initialize SuperAdmin
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/serviceAccountKey.json
-        run: |
-          node functions/initSuperAdmin.js
+- name: Initialize SuperAdmin
+  env:
+    FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+  run: |
+    node functions/initSuperAdmin.js
 
 
