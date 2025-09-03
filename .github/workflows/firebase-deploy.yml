@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout repository
+      # 1️⃣ Checkout repozitár
       - name: Checkout repository
         uses: actions/checkout@v3
 
@@ -28,8 +28,8 @@ jobs:
       - name: Setup Firebase credentials
         run: echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" > ${{ github.workspace }}/serviceAccountKey.json
 
-      # 5️⃣ Inštalácia závislostí pre functions
-      - name: Install Functions Dependencies
+      # 5️⃣ Inštalácia dependencies vo functions
+      - name: Install dependencies
         working-directory: functions
         run: npm install
 
