@@ -1,0 +1,51 @@
+name: Deploy to Firebase
+
+# Spustí sa pri pushi do main (inak ho nebude spúšťať)
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout repozitára
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      # 2️⃣ Node.js 24 pre kompatibilitu s funkciami
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '24'
+
+      # 3️⃣ Inštalácia dependencies a Firebase CLI
+      - name: Install dependencies
+        run: |
+          cd functions
+          npm install
+          npm install -g firebase-tools
+
+      # 4️⃣ Príprava service account zo secretu
+      - name: Prepare Firebase credentials
+        run: echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" > ${{ github.workspace }}/serviceAccountKey.json
+        shell: bash
+
+      # 5️⃣ Inicializácia superadmina (len ak ešte neexistuje)
+      - name: Initialize Superadmin (run only once)
+        if: github.ref == 'refs/heads/main'
+        run: |
+          export GOOGLE_APPLICATION_CREDENTIALS="${{ github.workspace }}/serviceAccountKey.json"
+          cd functions
+          node initSuperAdmin.js
+        shell: bash
+
+      # 6️⃣ Deploy funkcií a Firestore pravidiel
+      - name: Deploy Functions and Firestore Rules
+        run: |
+          export GOOGLE_APPLICATION_CREDENTIALS="${{ github.workspace }}/serviceAccountKey.json"
+          cd functions
+          firebase deploy --only functions,firestore:rules --project lyziarska-skola
+        shell: bash
