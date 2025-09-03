@@ -33,8 +33,7 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/serviceAccountKey.json
         run: |
-          firebase use --add lyziarska-skola
-          firebase deploy --only functions,firestore:rules
+          firebase deploy --only functions,firestore:rules --project lyziarska-skola
 
       # 6️⃣ Inicializácia SuperAdmina
       - name: Initialize SuperAdmin
