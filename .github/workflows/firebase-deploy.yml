@@ -24,11 +24,11 @@ jobs:
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
 
-      # 4️⃣ Setup Firebase credentials (Service Account JSON)
+      # 4️⃣ Setup Service Account
       - name: Setup Firebase credentials
         run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > ${{ github.workspace }}/serviceAccountKey.json
 
-      # 5️⃣ Install dependencies & Deploy
+      # 5️⃣ Install dependencies & deploy
       - name: Deploy to Firebase
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/serviceAccountKey.json
@@ -43,4 +43,3 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/serviceAccountKey.json
         run: node functions/initSuperAdmin.js
-
