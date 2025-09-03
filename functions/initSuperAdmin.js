@@ -1,6 +1,5 @@
 const admin = require("firebase-admin");
 
-// Inicializácia Admin SDK cez service account (nastav v workflow cez GOOGLE_APPLICATION_CREDENTIALS)
 admin.initializeApp();
 
 const db = admin.firestore();
@@ -27,7 +26,6 @@ async function initSuperAdmin() {
     });
 
     console.log("Superadmin úspešne inicializovaný 🚀");
-
   } catch (err) {
     console.error("Chyba pri inicializácii superadmina:", err);
     process.exit(1); // workflow skončí s chybou, ak niečo zlyhá
@@ -35,5 +33,4 @@ async function initSuperAdmin() {
 }
 
 initSuperAdmin();
-
 
