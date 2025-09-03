@@ -10,30 +10,34 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1️⃣ Checkout repozitár
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      # 2️⃣ Nastavenie Node.js
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '24'
 
+      # 3️⃣ Inštalácia Firebase CLI
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
 
+      # 4️⃣ Nastavenie Service Account Secret
       - name: Setup Firebase credentials
         run: echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" > ${{ github.workspace }}/serviceAccountKey.json
 
+      # 5️⃣ Deploy Firebase funkcií a Firestore pravidiel
       - name: Deploy to Firebase
-  env:
-    FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-  run: |
-    firebase deploy --only functions,firestore:rules --project lyziarska-skola
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        run: |
+          firebase deploy --only functions,firestore:rules --project lyziarska-skola
 
-- name: Initialize SuperAdmin
-  env:
-    FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
-  run: |
-    node functions/initSuperAdmin.js
-
-
+      # 6️⃣ Inicializácia SuperAdmina
+      - name: Initialize SuperAdmin
+        env:
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+        run: |
+          node functions/initSuperAdmin.js
