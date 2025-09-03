@@ -41,3 +41,7 @@ jobs:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/serviceAccountKey.json
         run: |
           node functions/initSuperAdmin.js
+<<<<<<< HEAD
+=======
+
+>>>>>>> 56e5bc5 (Aktualizovaný Firebase deploy workflow - používa service account)
