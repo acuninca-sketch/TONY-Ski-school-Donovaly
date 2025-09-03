@@ -10,57 +10,36 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1) Checkout repozitár
+      # 1️⃣ Checkout repo
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
-      # 2) Node na runneri (Firebase CLI beží v ňom)
+      # 2️⃣ Setup Node.js
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v3
         with:
           node-version: '24'
 
-      # 3) Firebase CLI
+      # 3️⃣ Install Firebase CLI
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
 
-      # 4) Zapíš service account JSON zo secretu do súboru
-      - name: Write service account key
-        run: |
-          echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT }}" > ${{ github.workspace }}/serviceAccountKey.json
+      # 4️⃣ Setup Firebase credentials (Service Account JSON)
+      - name: Setup Firebase credentials
+        run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > ${{ github.workspace }}/serviceAccountKey.json
 
-      # 5) (Voliteľné) vypnúť strict kontrolu engine, aby nevadilo,
-      #    že functions majú "engines.node": "18", ale runner má Node 24
-      - name: Relax npm engine check
-        run: npm config set engine-strict false
-
-      # 6) Nainštalovať dependencies pre Cloud Functions
-      - name: Install Functions dependencies
-        working-directory: functions
-        run: |
-          if [ -f package-lock.json ]; then
-            npm ci
-          else
-            npm install
-          fi
-
-      # 7) Deploy functions + firestore rules cez service account
+      # 5️⃣ Install dependencies & Deploy
       - name: Deploy to Firebase
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/serviceAccountKey.json
         run: |
+          cd functions
+          npm install
+          cd ..
           firebase deploy --only functions,firestore:rules --project lyziarska-skola
 
-      # 8) Inicializácia SuperAdmina (idempotentné)
+      # 6️⃣ Initialize SuperAdmin
       - name: Initialize SuperAdmin
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/serviceAccountKey.json
-        run: |
-          node functions/initSuperAdmin.js
-
-      # 9) Cleanup – odstráni kľúč zo súborového systému runnera
-      - name: Cleanup credentials
-        if: always()
-        run: rm -f ${{ github.workspace }}/serviceAccountKey.json
-
-
+        run: node functions/initSuperAdmin.js
