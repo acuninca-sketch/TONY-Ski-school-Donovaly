@@ -14,11 +14,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2️⃣ Setup Node.js 20
+      # 2️⃣ Setup Node.js 18
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '20'
+          node-version: '18'
 
       # 3️⃣ Cache node_modules in functions/
       - name: Cache node_modules
