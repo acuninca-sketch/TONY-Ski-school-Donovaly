@@ -1,36 +1,26 @@
 const admin = require("firebase-admin");
 
+// Inicializácia Firebase Admin SDK
 admin.initializeApp();
 
-const db = admin.firestore();
+// Tu vlož svoj e-mail, ktorý používaš vo Firebase Auth
+const userEmail = "a.cuninca@gmail.com"; // <-- zmeň na svoj email
 
-const SUPERADMIN_UID = "qVb759slUae8j0rAsnqGxd2SZG72";
-
-async function initSuperAdmin() {
+async function setSuperAdmin() {
   try {
-    const docRef = db.collection("roles").doc(SUPERADMIN_UID);
-    const doc = await docRef.get();
+    // Získanie používateľa podľa e-mailu
+    const userRecord = await admin.auth().getUserByEmail(userEmail);
+    const uid = userRecord.uid;
 
-    if (doc.exists) {
-      console.log("Superadmin už existuje, nič sa nemení ✅");
-      return;
-    }
+    // Nastavenie superadmin claim
+    await admin.auth().setCustomUserClaims(uid, { superadmin: true });
 
-    // Nastavenie custom claims
-    await admin.auth().setCustomUserClaims(SUPERADMIN_UID, { superadmin: true, admin: true });
-
-    // Uloženie role do Firestore
-    await docRef.set({
-      role: "superadmin",
-      createdAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-
-    console.log("Superadmin úspešne inicializovaný 🚀");
-  } catch (err) {
-    console.error("Chyba pri inicializácii superadmina:", err);
-    process.exit(1); // workflow skončí s chybou, ak niečo zlyhá
+    console.log(`✅ Superadmin claim nastavený pre: ${userEmail}`);
+    console.log("Počkajte 1-2 minúty, kým sa zmeny prejavia.");
+  } catch (error) {
+    console.error("❌ Chyba pri nastavovaní superadmin claimu:", error);
   }
 }
 
-initSuperAdmin();
+setSuperAdmin();
 
