@@ -18,7 +18,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '18'
+          node-version: '20'
 
       # 3️⃣ Cache node_modules in functions/
       - name: Cache node_modules
@@ -37,19 +37,16 @@ jobs:
       - name: Setup Firebase credentials
         run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > ${{ github.workspace }}/serviceAccountKey.json
 
-      # 6️⃣ Install dependencies & deploy Firebase functions + Firestore rules + Hosting
+      # 6️⃣ Install dependencies & deploy Firebase functions + Firestore rules
       - name: Install dependencies & deploy
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/serviceAccountKey.json
         run: |
-          cd functions
-          npm ci || npm install
-          cd ..
-          firebase deploy --only functions,firestore:rules,hosting --project lyziarska-skola
+          npm ci --prefix $GITHUB_WORKSPACE/functions || npm install --prefix $GITHUB_WORKSPACE/functions
+          firebase deploy --only functions,firestore:rules --project lyziarska-skola
 
       # 7️⃣ Initialize SuperAdmin
       - name: Initialize SuperAdmin
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/serviceAccountKey.json
-        run: node functions/initSuperAdmin.js
-
+        run: node $GITHUB_WORKSPACE/functions/initSuperAdmin.js
