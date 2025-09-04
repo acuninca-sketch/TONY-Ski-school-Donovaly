@@ -18,6 +18,28 @@
         "destination": "/index.html"
       }
     ]
+  },
+  "emulators": {
+    "firestore": {
+      "host": "127.0.0.1",
+      "port": 8085
+    },
+    "functions": {
+      "port": 5001
+    },
+    "hosting": {
+      "port": 5000
+    },
+    "hub": {
+      "port": 4401
+    },
+    "ui": {
+      "port": 4001
+    },
+    "logging": {
+      "port": 4501
+    }
   }
 }
+
 
