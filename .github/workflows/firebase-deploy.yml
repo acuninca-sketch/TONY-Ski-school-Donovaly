@@ -14,33 +14,41 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2️⃣ Setup Node.js
+      # 2️⃣ Setup Node.js 18
       - name: Set up Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '24'
+          node-version: '18'
 
-      # 3️⃣ Install Firebase CLI
+      # 3️⃣ Cache node_modules in functions/
+      - name: Cache node_modules
+        uses: actions/cache@v3
+        with:
+          path: functions/node_modules
+          key: ${{ runner.os }}-functions-${{ hashFiles('functions/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-functions-
+
+      # 4️⃣ Install Firebase CLI
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
 
-      # 4️⃣ Setup Service Account
+      # 5️⃣ Setup Firebase Service Account
       - name: Setup Firebase credentials
         run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > ${{ github.workspace }}/serviceAccountKey.json
 
-      # 5️⃣ Install dependencies & deploy
-      - name: Deploy to Firebase
+      # 6️⃣ Install dependencies & deploy Firebase functions + Firestore rules
+      - name: Install dependencies & deploy
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/serviceAccountKey.json
         run: |
           cd functions
-          npm install
+          npm ci || npm install
           cd ..
           firebase deploy --only functions,firestore:rules --project lyziarska-skola
 
-      # 6️⃣ Initialize SuperAdmin
+      # 7️⃣ Initialize SuperAdmin
       - name: Initialize SuperAdmin
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/serviceAccountKey.json
         run: node functions/initSuperAdmin.js
-
