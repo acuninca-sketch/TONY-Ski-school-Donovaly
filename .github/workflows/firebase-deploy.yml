@@ -1,4 +1,3 @@
-# test trigger for workflow
 name: Deploy to Firebase
 
 on:
@@ -48,9 +47,16 @@ jobs:
           cd ..
           firebase deploy --only functions,firestore:rules --project lyziarska-skola
 
-      # 7️⃣ Initialize SuperAdmin
+           # 7️⃣ Initialize SuperAdmin
       - name: Initialize SuperAdmin
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/serviceAccountKey.json
-        run: node initSuperAdmin.js
+        run: |
+          cd functions
+          if [ -f initSuperAdmin.js ]; then
+            echo "Súbor initSuperAdmin.js nájdený, spúšťam..."
+            node initSuperAdmin.js
+          else
+            echo "Súbor initSuperAdmin.js neexistuje, preskakujem krok."
+          fi
 
