@@ -37,26 +37,19 @@ jobs:
       - name: Setup Firebase credentials
         run: echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > ${{ github.workspace }}/serviceAccountKey.json
 
-      # 6️⃣ Install dependencies for functions
-      - name: Install dependencies for functions
+      # 6️⃣ Install dependencies & deploy Firebase functions + Firestore rules + Hosting
+      - name: Install dependencies & deploy
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/serviceAccountKey.json
         run: |
           cd functions
           npm ci || npm install
-
-      # 7️⃣ Deploy Firebase functions, firestore rules, and hosting
-      - name: Deploy to Firebase
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/serviceAccountKey.json
-        run: |
-          cd ${{ github.workspace }}
+          cd ..
           firebase deploy --only functions,firestore:rules,hosting --project lyziarska-skola
 
-      # 8️⃣ Initialize SuperAdmin
+      # 7️⃣ Initialize SuperAdmin
       - name: Initialize SuperAdmin
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/serviceAccountKey.json
-        run: |
-          cd functions
-          node initSuperAdmin.js
-
+        run: node functions/initSuperAdmin.js
 
