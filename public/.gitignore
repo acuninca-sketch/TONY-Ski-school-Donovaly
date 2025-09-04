@@ -1,0 +1,11 @@
+# Firebase service account
+serviceAccountKey.json
+
+# Logs
+firestore-debug.log
+
+# Backup files
+*.bak
+
+# Node modules
+node_modules/

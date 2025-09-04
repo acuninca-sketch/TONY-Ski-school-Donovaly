@@ -1,0 +1,18 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /settings/{docId} {
+      allow read, write: if request.auth != null && (request.auth.token.admin == true || request.auth.token.superadmin == true);
+    }
+
+    match /rezervacie/{docId} {
+      allow read, write: if request.auth != null && (request.auth.token.admin == true || request.auth.token.superadmin == true);
+    }
+
+    match /roles/{docId} {
+      allow read: if request.auth != null && (request.auth.token.admin == true || request.auth.token.superadmin == true);
+      allow write: if request.auth != null && request.auth.token.superadmin == true;
+    }
+  }
+}
