@@ -47,8 +47,9 @@ jobs:
           cd ..
           firebase deploy --only functions,firestore:rules --project lyziarska-skola
 
+      # 7️⃣ Initialize SuperAdmin
       - name: Initialize SuperAdmin
-  env:
-    GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/serviceAccountKey.json
-  run: node scripts/initSuperAdmin.js
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/serviceAccountKey.json
+        run: node initSuperAdmin.js
 
