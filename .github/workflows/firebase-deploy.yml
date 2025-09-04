@@ -52,4 +52,3 @@ jobs:
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/serviceAccountKey.json
         run: node initSuperAdmin.js
-
